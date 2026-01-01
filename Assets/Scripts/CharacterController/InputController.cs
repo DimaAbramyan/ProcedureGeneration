@@ -9,18 +9,33 @@ public class InputController : MonoBehaviour
     [SerializeField] Rigidbody rb;
     [SerializeField] InputActionReference moveAction;
     [SerializeField] InputActionReference mouseAction;
+    [SerializeField] InputActionReference jumpAction;
+    [SerializeField] LayerMask groundMask;
+
+    
+    bool isGrounded;
+    bool JumpCooldown;
+    //[SerializeField] Collider isGroundedObj;
     Vector3 move;
     Vector2 mousePos;
-
+    bool jump;
+    [SerializeField] Transform groundCheck;
+    [SerializeField] float groundRadius;
     void Update()
     {
         mousePos = mouseAction.action.ReadValue<Vector2>();
         move = moveAction.action.ReadValue<Vector3>();
-        mousePos = mouseAction.action.ReadValue<Vector2>();
+        jump = jumpAction.action.triggered;
         CameraRotation();
-       
-    }
-    void OnEnable()
+        if (jump && isGrounded && JumpCooldown)
+        {
+            rb.AddForce(Vector3.up * 240);
+            Debug.Log("F");
+            JumpCooldown = false;
+        }
+
+        }
+        void OnEnable()
     {
     }
 
@@ -28,15 +43,21 @@ public class InputController : MonoBehaviour
     {
         moveAction.action.Disable();
         mouseAction.action.Disable();
+        
         mouseAction.action.performed -= OnMouse;
     }
     void FixedUpdate()
     {
+        JumpCooldown = true;
         if (move != Vector3.zero)
         {
             MoveWASD();
         }
-
+        isGrounded = Physics.CheckSphere(
+            groundCheck.position,
+            groundRadius,
+            groundMask
+        );
     }
 
     private void MoveWASD()
@@ -55,7 +76,7 @@ public class InputController : MonoBehaviour
     {
         float mouseX = mousePos.x;
         //transform.Rotate(0f, mouseX * 0.1f, 0f);
-        Debug.Log(mousePos);
+        //Debug.Log(mousePos);
     }
     void OnMouse(InputAction.CallbackContext ctx)
     {

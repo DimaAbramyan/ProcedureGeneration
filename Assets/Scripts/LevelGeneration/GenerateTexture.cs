@@ -40,14 +40,19 @@ public class CellularTextureApplier : MonoBehaviour
     public void ApplyTexture()
     {
         NoiseMap = CreateCellularTexture();
-        
-        Material material = new Material(Shader.Find("Standard"));
-        material.mainTexture = NoiseMap;
+
+        Material material = new Material(
+            Shader.Find("Universal Render Pipeline/Unlit")
+
+        );
+
+        material.SetTexture("_BaseMap", NoiseMap);
 
         Renderer renderer = GetComponent<Renderer>();
         if (renderer != null)
             renderer.material = material;
     }
+
 
     Texture2D CreateCellularTexture()
     {
