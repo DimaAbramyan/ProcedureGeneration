@@ -14,21 +14,21 @@ public class InputController : MonoBehaviour
 
     void Update()
     {
+        mousePos = mouseAction.action.ReadValue<Vector2>();
         move = moveAction.action.ReadValue<Vector3>();
         mousePos = mouseAction.action.ReadValue<Vector2>();
-        Debug.Log(mousePos);
-
+        CameraRotation();
+       
     }
     void OnEnable()
     {
-        moveAction.action.Enable();
-        mouseAction.action.Enable();
     }
 
     void OnDisable()
     {
         moveAction.action.Disable();
         mouseAction.action.Disable();
+        mouseAction.action.performed -= OnMouse;
     }
     void FixedUpdate()
     {
@@ -36,12 +36,29 @@ public class InputController : MonoBehaviour
         {
             MoveWASD();
         }
+
     }
 
     private void MoveWASD()
     {
-        Vector3 newPosition = rb.position + move * speed * Time.fixedDeltaTime;
+        Vector3 direction =
+            transform.forward * move.z +
+            transform.right * move.x;
+
+        Vector3 newPosition =
+            rb.position + direction * speed * Time.fixedDeltaTime;
+
         rb.MovePosition(newPosition);
     }
-    //worldPos = mainCam.ScreenToWorldPoint(Mouse.current.position);
+
+    private void CameraRotation()
+    {
+        float mouseX = mousePos.x;
+        //transform.Rotate(0f, mouseX * 0.1f, 0f);
+        Debug.Log(mousePos);
+    }
+    void OnMouse(InputAction.CallbackContext ctx)
+    {
+        //Debug.Log(ctx.ReadValue<Vector2>());
+    }
 }

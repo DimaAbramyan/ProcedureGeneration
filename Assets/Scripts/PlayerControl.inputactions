@@ -104,8 +104,8 @@
                 },
                 {
                     "name": "",
-                    "id": "dfd6e1ef-8830-4985-8c2b-23a99da907a2",
-                    "path": "<Mouse>/position",
+                    "id": "bf3286a7-fcdb-4f75-b933-7c2d2c4ad9df",
+                    "path": "<Mouse>/delta",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -123,6 +123,11 @@
             "devices": [
                 {
                     "devicePath": "<Keyboard>",
+                    "isOptional": false,
+                    "isOR": false
+                },
+                {
+                    "devicePath": "<Mouse>",
                     "isOptional": false,
                     "isOR": false
                 }
