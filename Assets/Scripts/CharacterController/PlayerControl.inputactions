@@ -1,4 +1,5 @@
 {
+    "version": 1,
     "name": "PlayerControl",
     "maps": [
         {
@@ -19,6 +20,15 @@
                     "type": "Value",
                     "id": "43b4d916-7699-404d-bd84-ad47be8d6230",
                     "expectedControlType": "Vector2",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Jump",
+                    "type": "Value",
+                    "id": "b60ad149-d28e-44f6-89d2-e8a054166163",
+                    "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": true
@@ -110,6 +120,17 @@
                     "processors": "",
                     "groups": "",
                     "action": "MouseMovement",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "0a906ac9-06a7-44af-9c88-df3534fe3b81",
+                    "path": "<Keyboard>/space",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard",
+                    "action": "Jump",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

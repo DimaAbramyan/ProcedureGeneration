@@ -6,6 +6,7 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/Room.unity
+    path: Assets/Scenes/RoomGenScene.unity
     guid: 21d63cb70b4af9d43924d5f130f0c3be
   m_configObjects: {}
+  m_UseUCBPForAssetBundles: 0
