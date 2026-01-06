@@ -4,12 +4,27 @@ using JetBrains.Annotations;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-public class Rasterization:MonoBehaviour
+public class Rasterization
 {
     Vector2Int start;
     Vector2Int end;
     public int CellSize = 8;
-    public float Percent = 0.5f;
+    public float Percent = 0.5f; 
+    private readonly FloorContext context;
+
+    public Rasterization(FloorContext context)
+    {
+        this.context = context;
+    }
+
+    public void Run()
+    {
+        FloorData floorData = context.floorData;
+        foreach (RoomData roomData in floorData.rooms)
+        {
+            RoomRasterization(roomData);
+        }
+    }
     public void RoomRasterization(RoomData cluster)
     {
         start = cluster.GetMinCoord();

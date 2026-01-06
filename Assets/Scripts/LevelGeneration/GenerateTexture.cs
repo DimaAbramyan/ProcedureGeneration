@@ -19,8 +19,10 @@ public class CellularTextureApplier : MonoBehaviour
         return scale;
     }
     public int GetTextureSize() { return textureSize; }
-    public void GenerateTexture()
+    public void GenerateTexture(uint seed)
     {
+        Seed = seed;   
+        Debug.Log(Seed);
         GenerateSeed();
         ApplyTexture();
     }

@@ -2,20 +2,28 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class TriangulationDelone : MonoBehaviour
+public class TriangulationGenerator
 {
     bool triangulationFinished = false;
-
     FloorData floorData;
     List<Triangle> triangles;
     Triangle superstructure;
-    List<Vector2> unsortedPoints;
+    List<Vector2Int> unsortedPoints;
     public Material lineMaterial;
     List<LineRenderer> lines = new List<LineRenderer>();
-    [SerializeField] MinOstTree minOstTree;
-    public void Init(FloorData data)
+    [SerializeField] MinOstTreeGenerator minOstTree;
+    [SerializeField] private LevelGenerator lvlGenerator;
+
+    private readonly FloorContext context;
+    public TriangulationGenerator(FloorContext context)
     {
-        floorData = data;
+        this.context = context;
+    }
+
+    public void Run()
+    {
+        floorData = context.floorData;
+        Triangulation(floorData);
     }
     public void CreateSuperstructure()
     {
@@ -25,21 +33,21 @@ public class TriangulationDelone : MonoBehaviour
             new Vector2Int(minXY.x, maxXY.y * 2),
             new Vector2Int(maxXY.x * 2, minXY.y));
     }
-    public void Triangulation()
+    public void Triangulation(FloorData floorData)
     {
         CreateSuperstructure();
         triangles = new List<Triangle>
         {
             superstructure
         };
-        unsortedPoints = new List<Vector2>();
+        unsortedPoints = new List<Vector2Int>();
         foreach (RoomData room in floorData.rooms)
         {
             unsortedPoints.Add(room.center);
         }
         while (unsortedPoints.Count > 0)
         {
-            Vector2 point = unsortedPoints[0];
+            Vector2Int point = unsortedPoints[0];
             unsortedPoints.RemoveAt(0);
 
             List<Triangle> badTriangles = new List<Triangle>();
@@ -52,7 +60,7 @@ public class TriangulationDelone : MonoBehaviour
             List<Edge> edges = new List<Edge>();
             foreach (var t in badTriangles)
             {
-                Vector2[] v = t.GetPoints();
+                Vector2Int[] v = t.GetPoints();
                 edges.Add(new Edge(v[0], v[1]));
                 edges.Add(new Edge(v[1], v[2]));
                 edges.Add(new Edge(v[2], v[0]));
@@ -76,21 +84,49 @@ public class TriangulationDelone : MonoBehaviour
 
             foreach (var e in boundary)
             {
-                triangles.Add(new Triangle(e.a, e.b, point));
+                triangles.Add(new Triangle(e.a,e.b, point));
             }
         }
         RemoveSuperstructureTriangles();
         triangulationFinished = true;
         DrawTriangles(triangles);
-        minOstTree.SetValue(triangles);
-        minOstTree.Init();
+        foreach(var triangle in triangles)
+{
+            Vector2Int[] points = triangle.GetPoints();
+            RoomData[] RoomsToConnect = new RoomData[3];
+
+            for (int i = 0; i < points.Length; i++)
+            {
+                RoomsToConnect[i] = floorData.GetRoomDataByCenter(points[i]);
+            }
+
+            for (int i = 0; i < RoomsToConnect.Length; i++)
+            {
+                if (RoomsToConnect[i] == null)
+                    Debug.LogWarning($"Комната с центром {points[i]} не найдена!");
+                for (int j = i + 1; j < RoomsToConnect.Length; j++)
+                {
+                    RoomsToConnect[i].AddConectedRoom(RoomsToConnect[j]);
+                    RoomsToConnect[j].AddConectedRoom(RoomsToConnect[i]);
+                }
+            }
+        }
+        foreach (var roomData in context.floorData.rooms)
+        {
+            Debug.Log($"Номер комнаты: {roomData.number},его центр: {roomData.center}, число соседей: {roomData.connectedRooms.Count}");
+        }
+
+        GenerationTimer.Watch.Stop();
+        Debug.Log(
+            $"Generation time: {GenerationTimer.Watch.ElapsedMilliseconds} ms"
+        );
     }
     private void RemoveSuperstructureTriangles()
     {
         if (superstructure == null || triangles == null)
             return;
 
-        Vector2[] s = superstructure.GetPoints();
+        Vector2Int[] s = superstructure.GetPoints();
         Vector2 A = s[0];
         Vector2 B = s[1];
         Vector2 C = s[2];
@@ -111,17 +147,21 @@ public class TriangulationDelone : MonoBehaviour
         foreach (var t in triangles)
         {
             var p = t.GetPoints();
+            Vector3 down = new Vector3(0, 1, 0);
+            CreateLine(ToVector3XZ(p[0]) - down, ToVector3XZ(p[1]) - down);
+            CreateLine(ToVector3XZ(p[1]) - down, ToVector3XZ(p[2]) - down);
+            CreateLine(ToVector3XZ(p[2]) - down, ToVector3XZ(p[0]) - down);
 
-            CreateLine(p[0], p[1]);
-            CreateLine(p[1], p[2]);
-            CreateLine(p[2], p[0]);
+
+            CreateLine((Vector2)p[0], (Vector2)p[1]);
+            CreateLine((Vector2)p[1], (Vector2)p[2]);
+            CreateLine((Vector2)p[2], (Vector2)p[0]);
         }
     }
 
     void CreateLine(Vector3 a, Vector3 b)
     {
         var go = new GameObject("Line");
-        go.transform.parent = transform;
 
         var lr = go.AddComponent<LineRenderer>();
         lr.material = lineMaterial;
@@ -138,8 +178,12 @@ public class TriangulationDelone : MonoBehaviour
     void Clear()
     {
         foreach (var l in lines)
-            Destroy(l.gameObject);
+            Object.Destroy(l.gameObject);
         lines.Clear();
+    }
+    Vector3 ToVector3XZ(Vector2 v)
+    {
+        return new Vector3(v.x, 0f, v.y);
     }
 
 }

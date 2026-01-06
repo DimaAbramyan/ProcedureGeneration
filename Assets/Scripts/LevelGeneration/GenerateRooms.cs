@@ -1,17 +1,15 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
+using Unity.Burst.CompilerServices;
 
-public class GenerateRooms : MonoBehaviour
+public class RoomGenerator
 {
-    [SerializeField] public Rasterization rasterization;
-    [SerializeField] private RoomData center;
-    [SerializeField] private CellularTextureApplier source;
-    [SerializeField] private TriangulationDelone triangulationDelone;
-    [SerializeField] private bool GenerateFloor = false;
-    [SerializeField] public float fromColor;
-    [SerializeField] public float toColor;
-
-
+    public Rasterization rasterization;
+    private RoomData center;
+    private TriangulationGenerator triangulationDelone;
+    private bool CreateVisual = true;
+    public float fromColor;
+    public float toColor;
     public FloorData floorData { get; private set; }
     private RoomData roomData;
 
@@ -21,21 +19,43 @@ public class GenerateRooms : MonoBehaviour
     private GameObject tileObj;
     private GameObject centerObj;
     private GameObject floorHandler;
+    
 
     private int roomCount;
-    public void Generate()
+    private  FloorContext context;
+
+    public RoomGenerator(FloorContext context)
     {
-        Debug.Log($"От {fromColor}, До {toColor}");
+        this.context = context;
+        this.rasterization = context.rasterization;
+    }
+
+    public void Run()
+    {
+        Debug.Log("Идем");
+        floorData = context.floorData; // важно присвоить поле класса
+        if (context.source == null)
+        {
+            Debug.LogError("context.source == null! Назначьте CellularTextureApplier перед Run()");
+            return;
+        }
+
+        fromColor = context.fromColor;
+        toColor = context.toColor;
+
+        Generate(floorData);
+    }
+
+    public void Generate(FloorData floorData)
+    {
+        GenerationTimer.Watch.Restart();
         floorHandler = new GameObject();
-        floorData = new FloorData();
         tileObj = Resources.Load<GameObject>("Prefabs/Tile");
         centerObj = Resources.Load<GameObject>("Prefabs/CenterObj");
-
-        map = source.NoiseMap;
-        int size = source.GetTextureSize();
+        int size = context.source.GetTextureSize();
+        map = context.source.NoiseMap;
 
         visited = new bool[size, size];
-
         for (int x = 0; x < size; x++)
         {
             for (int y = 0; y < size; y++)
@@ -52,13 +72,13 @@ public class GenerateRooms : MonoBehaviour
                 }
             }
         }
-        triangulationDelone.Init(floorData);
-        triangulationDelone.Triangulation();
+        //context = new FloorContext(floorData);
+        //ResolveBlockedEdges floorData = new ResolveBlockedEdges();
     }
 
     List<Vector2Int> FloodFill(int startX, int startY)
     {
-        int size = source.GetTextureSize();
+        int size = context.source.GetTextureSize();
 
         List<Vector2Int> cluster = new List<Vector2Int>();
         Queue<Vector2Int> q = new Queue<Vector2Int>();
@@ -107,20 +127,18 @@ public class GenerateRooms : MonoBehaviour
         Vector2 sum = Vector2.zero;
         foreach (var p in cluster) sum += p;
         Vector2 centerPos = sum / cluster.Count;
-
-        if (GenerateFloor)
+        foreach (var r in cluster)
         {
-            foreach (var r in cluster)
-            {
-                roomData.AddTile(new TileData(r));
-            }
+            roomData.AddTile(new TileData(r));
         }
+        Debug.Log(rasterization);
         rasterization.RoomRasterization(roomData);
         if (roomData.Tiles.Count == 0)
         {
             return;
         }
         roomData.MakeWalls(roomData.GetMinCoord(), roomData.GetMaxCoord());
+        if (CreateVisual)
         GenerateRoomVisual();
         roomCount++;
         roomData.number = roomCount;
@@ -133,10 +151,10 @@ public class GenerateRooms : MonoBehaviour
         GameObject TilesHandler = new GameObject();
         TilesHandler.name = $"{roomCount}-ая комната, содержит {roomData.Tiles.Count} тайлов";
         GameObject tileObjInstance;
-        
+
         foreach (TileData tile in roomData.Tiles.Values)
         {
-            tileObjInstance = Instantiate(tileObj);
+            tileObjInstance = Object.Instantiate(tileObj);
             tileObjInstance.transform.position = new Vector3(tile.coord.x, tile.coord.y);
             tileObjInstance.transform.parent = TilesHandler.transform;
             if (tile.type == TileData.TileType.Floor)
@@ -148,7 +166,7 @@ public class GenerateRooms : MonoBehaviour
                 tileObjInstance.GetComponent<Renderer>().material.color = Color.blue;
             }
         }
-        GameObject tileObjectInstance = Instantiate(centerObj, TilesHandler.transform);
+        GameObject tileObjectInstance = Object.Instantiate(centerObj, TilesHandler.transform);
         tileObjectInstance.transform.position = new Vector3(roomData.center.x, roomData.center.y, 0);
         TilesHandler.transform.parent = floorHandler.transform;
     }
@@ -157,7 +175,7 @@ public class GenerateRooms : MonoBehaviour
         if (floorHandler == null)
             return;
 
-        Destroy(floorHandler.gameObject);
+        Object.Destroy(floorHandler.gameObject);
         for (int i = 0; i < floorData.rooms.Count; i++)
         {
             floorData.rooms[i].DestroyRoom();

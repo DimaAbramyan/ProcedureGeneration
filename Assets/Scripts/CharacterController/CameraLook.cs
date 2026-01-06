@@ -17,8 +17,8 @@ public class CameraLook : MonoBehaviour
     {
         mouseAction.action.Enable();
 
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        //Cursor.lockState = CursorLockMode.Locked;
+       // Cursor.visible = false;
     }
 
     void OnDisable()
