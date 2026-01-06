@@ -48,4 +48,15 @@ public class FloorData
     {
         return FloorMaxXY;
     }
+    public RoomData GetRoomDataByCenter(Vector2Int roomCenter)
+    {
+        foreach (var room in rooms)
+        {
+            if (room.center == roomCenter)
+                    {
+                return room;
+            }
+        }
+        return null;
+    }
 }

@@ -5,6 +5,7 @@ using UnityEngine.InputSystem;
 
 public class InputController : MonoBehaviour
 {
+    [SerializeField] float jumpForce = 220;
     [SerializeField] float speed = 5f;
     [SerializeField] Rigidbody rb;
     [SerializeField] InputActionReference moveAction;
@@ -29,7 +30,7 @@ public class InputController : MonoBehaviour
         CameraRotation();
         if (jump && isGrounded && JumpCooldown)
         {
-            rb.AddForce(Vector3.up * 240);
+            rb.AddForce(Vector3.up * jumpForce);
             Debug.Log("F");
             JumpCooldown = false;
         }

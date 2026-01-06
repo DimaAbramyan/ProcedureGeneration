@@ -7,17 +7,17 @@ using UnityEditor;
 public class Triangle
 {
     private Vector2 circumcenter = Vector2.zero;
-    private Vector2[] points = new Vector2[3];
+    private Vector2Int[] points = new Vector2Int[3];
     private Edge[] edges = new Edge[3];
     float radius;
     public Triangle(RoomData room1, RoomData room2, RoomData room3)
     {
-        points = new Vector2[3] { room1.center, room2.center, room3.center };
+        points = new Vector2Int[3] { room1.center, room2.center, room3.center };
     }
     
-    public Triangle(Vector2 roomCoord1, Vector2 roomCoord2, Vector2 roomCoord3)
+    public Triangle(Vector2Int roomCoord1, Vector2Int roomCoord2, Vector2Int roomCoord3)
     {
-        points = new Vector2[3] { roomCoord1, roomCoord2, roomCoord3 };
+        points = new Vector2Int[3] { roomCoord1, roomCoord2, roomCoord3 };
         Edge[] edges = new Edge[3]
         {
             new Edge(roomCoord1, roomCoord2),
@@ -33,7 +33,7 @@ public class Triangle
     {
         if (circumcenter == Vector2.zero)
         {
-            Vector2[] vertexs = new Vector2[3];
+            Vector2Int[] vertexs = new Vector2Int[3];
             for (int index = 0; index < 3; index++)
             {
                 vertexs[index] = points[index];
@@ -63,7 +63,7 @@ public class Triangle
         }
         return true;
     }
-    public Vector2[] GetPoints()
+    public Vector2Int[] GetPoints()
     {
         return points;
     }

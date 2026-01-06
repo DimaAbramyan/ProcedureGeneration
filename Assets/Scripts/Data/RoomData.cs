@@ -7,9 +7,10 @@ public class RoomData
     public int number;
     public Dictionary<Vector2Int, TileData> Tiles = new();
     public List<Vector2Int> Walls = new();
-    public Vector2 center { get; private set; }
+    public Vector2Int center { get; private set; }
     public Vector2Int MinTileXY { get; private set; }
     public Vector2Int MaxTileXY { get; private set; }
+    public HashSet<RoomData> connectedRooms;
 
     public RoomData()
     {
@@ -17,6 +18,7 @@ public class RoomData
         center = new Vector2Int(0,0);
         MinTileXY = new Vector2Int(int.MaxValue, int.MaxValue);
         MaxTileXY = new Vector2Int(int.MinValue, int.MinValue);
+        connectedRooms = new HashSet<RoomData>();
     }
     public RoomData(Vector2Int centerCoord)
     {
@@ -24,6 +26,7 @@ public class RoomData
         center = centerCoord;
         MinTileXY = new Vector2Int(int.MaxValue, int.MaxValue);
         MaxTileXY = new Vector2Int(int.MinValue, int.MinValue);
+        connectedRooms = new HashSet<RoomData>();
     }
     public void AddTile(TileData tile)
     {
@@ -102,7 +105,6 @@ public class RoomData
                 }
             }
         }
-        Debug.Log($"Комната номер {number}, кол-во стен: {Walls.Count}, кол-во тайлов: {Tiles.Count}");
     }
     bool IsTileFloor(Vector2Int TileToCheck)
     {
@@ -130,8 +132,12 @@ public class RoomData
         MinTileXY = new Vector2Int(int.MaxValue, int.MaxValue);
         MaxTileXY = new Vector2Int(int.MinValue, int.MinValue);
 
-        center = Vector2.zero;
+        center = Vector2Int.zero;
 
         Debug.Log($"Удалено {count} тайлов");
+    }
+    public void AddConectedRoom(RoomData newConectedRoom)
+    {
+        connectedRooms.Add(newConectedRoom);
     }
 }
