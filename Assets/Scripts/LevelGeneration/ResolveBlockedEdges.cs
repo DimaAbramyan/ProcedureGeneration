@@ -39,18 +39,18 @@ public class ResolveBlockedEdges
         //    Debug.Log(wall);
         //}
         //Debug.Log("<---------------------------------------------->");
-        foreach (RoomData fromRoom in floorData.rooms)
-        {
-            foreach (RoomData toRoom in fromRoom.connectedRooms)
-            {
-                if (checkedRooms.Contains(fromRoom) || (!CanConnectCenters(fromRoom, toRoom, 2)))
-                {
-                    continue;
-                }
-                (usefulWallsFrom, usefulWallsTo) = MinimizeWalls(fromRoom, toRoom);
+        //foreach (RoomData fromRoom in floorData.rooms)
+        //{
+        //    foreach (RoomData toRoom in fromRoom.connectedRooms)
+        //    {
+        //        if (checkedRooms.Contains(fromRoom) || (!CanConnectCenters(fromRoom, toRoom, 2)))
+        //        {
+        //            continue;
+        //        }
+        //        (usefulWallsFrom, usefulWallsTo) = MinimizeWalls(fromRoom, toRoom);
 
-            }
-        }
+        //    }
+        //}
     }
     void TryCreateCorridor(List<Vector2Int> fromWalls, List<Vector2Int> toWalls, RoomData fromRoom, RoomData toRoom)
     {

@@ -6,6 +6,7 @@ public class FloorGenerationUIController : MonoBehaviour
 {
     [Header("UI Elements")]
     [SerializeField] private TMP_InputField inputSeed;
+    [SerializeField] private TMP_InputField inputSize;
     [SerializeField] private TMP_InputField inputFrom;
     [SerializeField] private TMP_InputField inputTo;
     [SerializeField] private TMP_InputField inputCellSize;
@@ -15,10 +16,12 @@ public class FloorGenerationUIController : MonoBehaviour
     [SerializeField] private CellularTextureApplier cellularTextureApplier;
     [SerializeField] private GameObject tilePrefab;
     private uint seed;
+    private int size; 
     private void Start()
     {
         Debug.Log("залупа блять запустилась");
         inputSeed.onEndEdit.AddListener(OnSeedChanged);
+        inputSize.onEndEdit.AddListener(OnSizeChanged);
         inputFrom.onEndEdit.AddListener(OnFromChanged);
         inputTo.onEndEdit.AddListener(OnToChanged);
         inputCellSize.onEndEdit.AddListener(OnCellSizeChanged);
@@ -39,7 +42,18 @@ public class FloorGenerationUIController : MonoBehaviour
             Debug.LogWarning($"Неверный формат сида: {text}");
         }
     }
-
+    private void OnSizeChanged(string text)
+    {
+        if (int.TryParse(text, out int newSeed))
+        {
+            size = newSeed;
+            Debug.Log($"Seed изменён на: {seed}");
+        }
+        else
+        {
+            Debug.LogWarning($"Неверный формат сида: {text}");
+        }
+    }
     private void OnFromChanged(string text) { }
     private void OnToChanged(string text) { }
     private void OnCellSizeChanged(string text) { }
@@ -50,7 +64,7 @@ public class FloorGenerationUIController : MonoBehaviour
     {
         if (cellularTextureApplier != null)
         {
-            cellularTextureApplier.GenerateTexture(seed);
+            cellularTextureApplier.GenerateTexture(seed, size);
             Debug.Log("Новая текстура сгенерирована");
         }
         else
@@ -84,7 +98,7 @@ public class FloorGenerationUIController : MonoBehaviour
         Debug.Log($"Контекст готов: source={context.source}, rasterization={context.rasterization}");
         FloorGenerationPipeline pipeLine = new FloorGenerationPipeline(context);
 
-        pipeLine.Generate();
+        pipeLine.GenerateAsync();
         // --- 3. Генерация комнат ---
         //RoomGenerator roomGen = new RoomGenerator(context);
         //roomGen.Run();

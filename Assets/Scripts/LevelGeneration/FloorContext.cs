@@ -9,6 +9,9 @@ public class FloorContext
     public float fromColor;
     public float toColor;
     public uint seed;
+    public Color[] mapColor;
+    public int mapWidht;
+    public int mapHeight;
 
     public FloorContext()
     {

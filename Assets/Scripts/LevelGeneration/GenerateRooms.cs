@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 using Unity.Burst.CompilerServices;
+using System;
 
 public class RoomGenerator
 {
@@ -13,14 +14,11 @@ public class RoomGenerator
     public FloorData floorData { get; private set; }
     private RoomData roomData;
 
-    private Texture2D map;
     private bool[,] visited;
 
-    private GameObject tileObj;
-    private GameObject centerObj;
-    private GameObject floorHandler;
-    
-
+    Color[] pixels;
+    int width;
+    int height;
     private int roomCount;
     private  FloorContext context;
 
@@ -32,7 +30,7 @@ public class RoomGenerator
 
     public void Run()
     {
-        Debug.Log("Идем");
+        //GenerationTimer.Watch.Start();
         floorData = context.floorData;
         if (context.source == null)
         {
@@ -43,28 +41,33 @@ public class RoomGenerator
         fromColor = context.fromColor;
         toColor = context.toColor;
 
+        pixels = context.mapColor;
+        width = context.mapWidht;
+        height = context.mapHeight;
+
         Generate(floorData);
+        //Debug.Log(
+        //    $"1-ая генерация: {GenerationTimer.Watch.ElapsedMilliseconds} ms"
+        //);
+        //GenerationTimer.Watch.Stop();
+
     }
 
     public void Generate(FloorData floorData)
     {
-        //GenerationTimer.Watch.Restart();
-        floorHandler = new GameObject();
-        tileObj = Resources.Load<GameObject>("Prefabs/Tile");
-        centerObj = Resources.Load<GameObject>("Prefabs/CenterObj");
         int size = context.source.GetTextureSize();
-        map = context.source.NoiseMap;
 
         visited = new bool[size, size];
         for (int x = 0; x < size; x++)
         {
             for (int y = 0; y < size; y++)
             {
+                int index = y * width + x;
                 if (visited[x, y])
                     continue;
 
 
-                if (ColourComparison.ColourCheck(map.GetPixel(x,y), x => x >= fromColor && x < toColor))
+                if (ColourComparison.ColourCheck(pixels[index], x => x >= fromColor && x < toColor))
                 {
                     List<Vector2Int> cluster = FloodFill(x, y);
 
@@ -95,14 +98,14 @@ public class RoomGenerator
             {
                 int nx = n.x;
                 int ny = n.y;
-
+                int index = ny * size + nx;
                 if (nx < 0 || ny < 0 || nx >= size || ny >= size)
                     continue;
 
                 if (visited[nx, ny])
                     continue;
 
-                if (ColourComparison.ColourCheck(map.GetPixel(nx, ny), x => x >= fromColor && x < toColor))
+                if (ColourComparison.ColourCheck(pixels[index], x => x >= fromColor && x < toColor))
                 {
                     visited[nx, ny] = true;
                     q.Enqueue(new Vector2Int(nx, ny));
@@ -142,19 +145,5 @@ public class RoomGenerator
         roomCount++;
         floorData.AddRoom(roomData);
         Debug.Log($"Комната {roomCount}. Пикселей: {cluster.Count}, центр: {centerPos}");
-    }
-
-    
-    public void ClearFloor()
-    {
-        if (floorHandler == null)
-            return;
-
-        Object.Destroy(floorHandler.gameObject);
-        for (int i = 0; i < floorData.rooms.Count; i++)
-        {
-            floorData.rooms[i].DestroyRoom();
-        }
-        roomCount = 0;
     }
 }

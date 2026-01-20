@@ -4,9 +4,7 @@ using UnityEngine;
 public enum GenerationStyle { PerlinNoise, VoronoiNoise };
 public class CellularTextureApplier : MonoBehaviour
 {
-    [SerializeField]
-    private float scale = 3;
-    [SerializeField]
+    private float scale = 8;
     private int textureSize;
     public Transform mapSize;
     public GenerationStyle generationStyle;
@@ -19,10 +17,13 @@ public class CellularTextureApplier : MonoBehaviour
         return scale;
     }
     public int GetTextureSize() { return textureSize; }
-    public void GenerateTexture(uint seed)
+    public void GenerateTexture(uint seed, int size)
     {
-        Seed = seed;   
-        Debug.Log(Seed);
+        
+        Seed = seed;  
+        textureSize = size;
+        scale = size / 32;
+        Debug.Log($"{Seed}, {textureSize}, {scale}");
         GenerateSeed();
         ApplyTexture();
     }
