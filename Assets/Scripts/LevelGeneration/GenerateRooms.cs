@@ -33,7 +33,7 @@ public class RoomGenerator
     public void Run()
     {
         Debug.Log("Идем");
-        floorData = context.floorData; // важно присвоить поле класса
+        floorData = context.floorData;
         if (context.source == null)
         {
             Debug.LogError("context.source == null! Назначьте CellularTextureApplier перед Run()");
@@ -48,7 +48,7 @@ public class RoomGenerator
 
     public void Generate(FloorData floorData)
     {
-        GenerationTimer.Watch.Restart();
+        //GenerationTimer.Watch.Restart();
         floorHandler = new GameObject();
         tileObj = Resources.Load<GameObject>("Prefabs/Tile");
         centerObj = Resources.Load<GameObject>("Prefabs/CenterObj");
@@ -124,52 +124,27 @@ public class RoomGenerator
     void CreateRoom(List<Vector2Int> cluster)
     {
         roomData = new RoomData();
-        Vector2 sum = Vector2.zero;
+        Vector2Int sum = Vector2Int.zero;
         foreach (var p in cluster) sum += p;
-        Vector2 centerPos = sum / cluster.Count;
+        Vector2Int centerPos = sum / cluster.Count;
         foreach (var r in cluster)
         {
             roomData.AddTile(new TileData(r));
         }
-        Debug.Log(rasterization);
         rasterization.RoomRasterization(roomData);
         if (roomData.Tiles.Count == 0)
         {
             return;
         }
         roomData.MakeWalls(roomData.GetMinCoord(), roomData.GetMaxCoord());
-        if (CreateVisual)
-        GenerateRoomVisual();
-        roomCount++;
+
         roomData.number = roomCount;
+        roomCount++;
         floorData.AddRoom(roomData);
         Debug.Log($"Комната {roomCount}. Пикселей: {cluster.Count}, центр: {centerPos}");
     }
 
-    public void GenerateRoomVisual()
-    {
-        GameObject TilesHandler = new GameObject();
-        TilesHandler.name = $"{roomCount}-ая комната, содержит {roomData.Tiles.Count} тайлов";
-        GameObject tileObjInstance;
-
-        foreach (TileData tile in roomData.Tiles.Values)
-        {
-            tileObjInstance = Object.Instantiate(tileObj);
-            tileObjInstance.transform.position = new Vector3(tile.coord.x, tile.coord.y);
-            tileObjInstance.transform.parent = TilesHandler.transform;
-            if (tile.type == TileData.TileType.Floor)
-            {
-                tileObjInstance.GetComponent<Renderer>().material.color = Color.green;
-            }
-            else
-            {
-                tileObjInstance.GetComponent<Renderer>().material.color = Color.blue;
-            }
-        }
-        GameObject tileObjectInstance = Object.Instantiate(centerObj, TilesHandler.transform);
-        tileObjectInstance.transform.position = new Vector3(roomData.center.x, roomData.center.y, 0);
-        TilesHandler.transform.parent = floorHandler.transform;
-    }
+    
     public void ClearFloor()
     {
         if (floorHandler == null)

@@ -6,7 +6,7 @@ public class RoomData
 {
     public int number;
     public Dictionary<Vector2Int, TileData> Tiles = new();
-    public List<Vector2Int> Walls = new();
+    public Dictionary<Vector2Int, TileData> Walls = new();
     public Vector2Int center { get; private set; }
     public Vector2Int MinTileXY { get; private set; }
     public Vector2Int MaxTileXY { get; private set; }
@@ -40,6 +40,18 @@ public class RoomData
             if (tile.coord.y >= MaxTileXY.y) MaxTileXY = new Vector2Int(MaxTileXY.x, tile.coord.y+1);
         }
     }
+    public void RemoveTile(Vector2Int tileCoord)
+    {
+        if (Tiles.ContainsKey(tileCoord))
+        {
+            if (Walls.ContainsKey(tileCoord))
+            {
+                Walls.Remove(tileCoord);
+            }
+            Tiles.Remove(tileCoord);
+            }
+        CountCenter();
+    }
 
     public int CountSquare(Vector2Int from, Vector2Int to)
     {
@@ -66,7 +78,9 @@ public class RoomData
             {
                 Vector2Int key = new Vector2Int(i, j);
                 if (!Tiles.ContainsKey(key))
+                {
                     AddTile(new TileData(key));
+                }
             }
         }
     }
@@ -78,7 +92,10 @@ public class RoomData
             {
                 Vector2Int key = new Vector2Int(i, j);
                 if (Tiles.ContainsKey(key))
+                {
                     Tiles.Remove(key);
+                    Walls.Remove(key);
+                }
             }
         }
     }
@@ -101,17 +118,22 @@ public class RoomData
                 else
                 {
                     tile.type = TileData.TileType.Wall;
-                    Walls.Add(coord);
+                    if (!Walls.ContainsKey(coord))
+                    Walls.Add(coord, tile);
                 }
             }
         }
     }
     bool IsTileFloor(Vector2Int TileToCheck)
     {
-        return Tiles.ContainsKey(new Vector2Int(TileToCheck.x + 1, TileToCheck.y)) &&
+        return (Tiles.ContainsKey(new Vector2Int(TileToCheck.x + 1, TileToCheck.y)) &&
                Tiles.ContainsKey(new Vector2Int(TileToCheck.x - 1, TileToCheck.y)) &&
                Tiles.ContainsKey(new Vector2Int(TileToCheck.x, TileToCheck.y + 1)) &&
-               Tiles.ContainsKey(new Vector2Int(TileToCheck.x, TileToCheck.y - 1));
+               Tiles.ContainsKey(new Vector2Int(TileToCheck.x, TileToCheck.y - 1))) &&
+               Tiles.ContainsKey(new Vector2Int(TileToCheck.x+1, TileToCheck.y+1)) &&
+               Tiles.ContainsKey(new Vector2Int(TileToCheck.x + 1, TileToCheck.y - 1)) &&
+               Tiles.ContainsKey(new Vector2Int(TileToCheck.x - 1, TileToCheck.y + 1)) &&
+               Tiles.ContainsKey(new Vector2Int(TileToCheck.x - 1, TileToCheck.y - 1));
     }
     public void CountCenter()
     {
@@ -129,6 +151,7 @@ public class RoomData
     {
         int count = Tiles.Count;
         Tiles.Clear();
+        Walls.Clear();
         MinTileXY = new Vector2Int(int.MaxValue, int.MaxValue);
         MaxTileXY = new Vector2Int(int.MinValue, int.MinValue);
 

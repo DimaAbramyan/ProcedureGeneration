@@ -40,6 +40,24 @@ public class FloorData
         if (inputMin.x < FloorMinXY.x) FloorMinXY.x = inputMin.x;
         if (inputMin.y < FloorMinXY.y) FloorMinXY.y = inputMin.y;
     }
+    public bool DoesHaveTile(Vector2Int tileToCheck)
+    {
+        foreach (RoomData Room in rooms)
+        {
+            if (Room.Tiles.ContainsKey(tileToCheck))
+            { return true; }
+        }
+        return false;
+    }
+    public RoomData WhichRoomTile(Vector2Int tileToCheck)
+    {
+        foreach (RoomData Room in rooms)
+        {
+            if (Room.Tiles.ContainsKey(tileToCheck))
+            { return Room; }
+        }
+        return null;
+    }
     public Vector2Int GetFloorMinXY()
     {
         return FloorMinXY;

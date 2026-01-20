@@ -7,7 +7,7 @@ public class CellularTextureApplier : MonoBehaviour
     [SerializeField]
     private float scale = 3;
     [SerializeField]
-    private int textureSize = 255;
+    private int textureSize;
     public Transform mapSize;
     public GenerationStyle generationStyle;
     public uint Seed;

@@ -4,15 +4,12 @@ using UnityEngine;
 
 public class Coridor
 {
-    public Vector2[] connectedPoints = new Vector2[2];
-
-    public void  AddCoridor(TileData from, TileData to)
+    public Vector2Int[] connectedPoints = new Vector2Int[2];
+    public float lenght;
+    public Coridor(Vector2Int from, Vector2Int to)
     {
-        connectedPoints[0] = from.coord;
-        connectedPoints[1] = to.coord;
-    }
-    public Coridor()
-    {
-        connectedPoints = new Vector2[2];
+        connectedPoints[0] = from;
+        connectedPoints[1] = to;
+        lenght = Mathf.Abs(from.x - to.x) + Mathf.Abs(from.y - to.y);
     }
 }

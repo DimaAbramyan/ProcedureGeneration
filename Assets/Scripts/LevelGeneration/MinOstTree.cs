@@ -5,7 +5,7 @@ using UnityEngine;
 public class MinOstTreeGenerator
 {
     [SerializeField]
-    LevelGenerator levelGenerator;
+    LevelBuilder levelGenerator;
     FloorData floorData;
     List<Triangle> triangles;
     Edge[] edges;

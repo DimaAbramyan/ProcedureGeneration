@@ -8,7 +8,7 @@ public class Rasterization
 {
     Vector2Int start;
     Vector2Int end;
-    public int CellSize = 8;
+    public int CellSize;
     public float Percent = 0.5f; 
     private readonly FloorContext context;
 
@@ -45,7 +45,7 @@ public class Rasterization
                 Vector2Int to = new Vector2Int(i + CellSize, j +CellSize);
                 //Debug.Log("Начало: " + from + " конец: " + to);
                 clusterPixels = cluster.CountSquare(from, to);
-                if (clusterPixels / Mathf.Pow((float)CellSize, 2) >= Percent)
+                if (clusterPixels / Mathf.Pow(CellSize, 2) >= Percent)
                 {
                     cluster.FillCell(from, to);
                 }
@@ -57,6 +57,7 @@ public class Rasterization
                 //Debug.Log(($"Проверка: {((clusterPixels / ((float)CellSize * (float)CellSize)) >= Percent)} кол-во пикселей, которые подходят: {clusterPixels} "));
             }
         }
+        cluster.MakeWalls(cluster.MinTileXY, cluster.MaxTileXY);
         cluster.CountCenter();
     }
 

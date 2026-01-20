@@ -62,42 +62,45 @@ public class FloorGenerationUIController : MonoBehaviour
     {
         Debug.Log("Старт генерации пола");
 
-        // --- 1. Создаем контекст ---
         FloorContext context = new FloorContext
         {
             floorData = new FloorData(),
-            source = cellularTextureApplier, // обязательно назначаем CellularTextureApplier
+            source = cellularTextureApplier,
             tilePrefab = tilePrefab,
             fromColor = float.TryParse(inputFrom.text, out float fFrom) ? fFrom : 0f,
             toColor = float.TryParse(inputTo.text, out float fTo) ? fTo : 1f,
-            seed = seed // <-- используем текущий seed
+            seed = seed
         };
 
-        // --- 2. Инициализируем Rasterization ---
         context.rasterization = new Rasterization(context)
         {
             CellSize = int.TryParse(inputCellSize.text, out int cs) ? cs : 8,
+            
             Percent = float.TryParse(inputPercent.text, out float perc) ? perc : 0.5f
         };
+        Debug.Log("CellSize: "+inputCellSize);
+        Debug.Log(int.TryParse(inputCellSize.text, out int f) ? f : 8);
 
         Debug.Log($"Контекст готов: source={context.source}, rasterization={context.rasterization}");
+        FloorGenerationPipeline pipeLine = new FloorGenerationPipeline(context);
 
+        pipeLine.Generate();
         // --- 3. Генерация комнат ---
-        RoomGenerator roomGen = new RoomGenerator(context);
-        roomGen.Run();
+        //RoomGenerator roomGen = new RoomGenerator(context);
+        //roomGen.Run();
 
-        // --- 4. Растеризация (уже в контексте) ---
-        context.rasterization.Run();
+        //// --- 4. Растеризация (уже в контексте) ---
+        //context.rasterization.Run();
 
-        // --- 5. Триангуляция ---
-        new TriangulationGenerator(context).Run();
+        //// --- 5. Триангуляция ---
+        //new TriangulationGenerator(context).Run();
 
-        // --- 6. MinOstTree и блокировки ---
-        new MinOstTreeGenerator(context).Run();
-        new ResolveBlockedEdges(context).Run();
+        //// --- 6. MinOstTree и блокировки ---
+        //new MinOstTreeGenerator(context).Run();
+        //new ResolveBlockedEdges(context).Run();
 
-        // --- 7. Визуализация ---
-        new LevelGenerator(context).Run();
+        //// --- 7. Визуализация ---
+        //new LevelGenerator(context).Run();
 
         Debug.Log("Генерация завершена!");
     }

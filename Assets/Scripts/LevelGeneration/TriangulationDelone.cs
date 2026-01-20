@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class TriangulationGenerator
 {
+    bool DrawLines = true;
     bool triangulationFinished = false;
     FloorData floorData;
     List<Triangle> triangles;
@@ -12,7 +13,7 @@ public class TriangulationGenerator
     public Material lineMaterial;
     List<LineRenderer> lines = new List<LineRenderer>();
     [SerializeField] MinOstTreeGenerator minOstTree;
-    [SerializeField] private LevelGenerator lvlGenerator;
+    [SerializeField] private LevelBuilder lvlGenerator;
 
     private readonly FloorContext context;
     public TriangulationGenerator(FloorContext context)
@@ -89,6 +90,7 @@ public class TriangulationGenerator
         }
         RemoveSuperstructureTriangles();
         triangulationFinished = true;
+        if (DrawLines)
         DrawTriangles(triangles);
         foreach(var triangle in triangles)
 {
@@ -113,13 +115,13 @@ public class TriangulationGenerator
         }
         foreach (var roomData in context.floorData.rooms)
         {
-            Debug.Log($"Номер комнаты: {roomData.number},его центр: {roomData.center}, число соседей: {roomData.connectedRooms.Count}");
+           // Debug.Log($"Номер комнаты: {roomData.number},его центр: {roomData.center}, число соседей: {roomData.connectedRooms.Count}");
         }
 
-        GenerationTimer.Watch.Stop();
-        Debug.Log(
-            $"Generation time: {GenerationTimer.Watch.ElapsedMilliseconds} ms"
-        );
+        //GenerationTimer.Watch.Stop();
+        //Debug.Log(
+        //    $"Generation time: {GenerationTimer.Watch.ElapsedMilliseconds} ms"
+        //);
     }
     private void RemoveSuperstructureTriangles()
     {

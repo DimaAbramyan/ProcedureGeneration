@@ -31,7 +31,6 @@ public class InputController : MonoBehaviour
         if (jump && isGrounded && JumpCooldown)
         {
             rb.AddForce(Vector3.up * jumpForce);
-            Debug.Log("F");
             JumpCooldown = false;
         }
 
