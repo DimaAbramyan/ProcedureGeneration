@@ -5,6 +5,7 @@ using Unity.VisualScripting;
 using UnityEngine;
 public class FloorData
 {
+    public Dictionary<Vector2Int, RoomData> mapRooms;
     public List<RoomData> rooms;
     public List<Coridor> coridors;
     public int FloorCount;
@@ -21,13 +22,29 @@ public class FloorData
     }
     public FloorData()
     {
+        mapRooms = new Dictionary<Vector2Int, RoomData>();
         rooms = new List<RoomData>();
         coridors = new List<Coridor>();
 
         FloorMaxXY = new Vector2Int(int.MinValue, int.MinValue);
         FloorMinXY = new Vector2Int(int.MaxValue, int.MaxValue);
     }
-
+    public void AddMapRoom(Vector2Int from, Vector2Int to, RoomData room)
+    {
+        for (int i = from.x; i < to.x; i++)
+        {
+            for (int j = from.y; j < to.y; j++)
+            {
+                mapRooms.Add(new Vector2Int(i, j), room);
+            }
+        }
+    }
+    public RoomData GetRoomByTile(Vector2Int coord)
+    {
+        if (mapRooms.TryGetValue(coord, out var res))
+        return res;
+        return null;
+    }
     public void AddRoom(RoomData Room)
     {
         rooms.Add(Room);

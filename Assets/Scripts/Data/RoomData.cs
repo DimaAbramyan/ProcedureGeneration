@@ -163,4 +163,8 @@ public class RoomData
     {
         connectedRooms.Add(newConectedRoom);
     }
+    public void RemoveConnectedRoom(RoomData newConectedRoom)
+    {
+        connectedRooms.Remove(newConectedRoom);
+    }
 }

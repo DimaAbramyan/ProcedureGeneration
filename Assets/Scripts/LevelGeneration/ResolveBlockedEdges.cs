@@ -1,12 +1,14 @@
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using NUnit.Framework;
 using UnityEngine;
+using Cysharp.Threading.Tasks;
+using System.Threading.Tasks;
+
 
 public class ResolveBlockedEdges
 {
-    List<Vector2Int> usefulWallsFrom;
-    List<Vector2Int> usefulWallsTo;
+    FloorData floorData;
     bool flippedRooms = true;
     Vector2 centersPerpend;
     int lenght = 150;
@@ -17,67 +19,70 @@ public class ResolveBlockedEdges
         this.context = context;
     }
 
-    public void Run()
+    public async UniTask Run()
     {
-        FloorData floorData = context.floorData;
+        floorData = context.floorData;
 
         checkedRooms = new List<RoomData>();
 
-        ResolveImpossibleWays(floorData);
+        await ResolveImpossibleWays();
     }
-    void ResolveImpossibleWays(FloorData floorData)
+    async UniTask ResolveImpossibleWays()
     {
-        //MinimizeWalls(floorData.rooms[0], floorData.rooms[2]);
-        //MinimizeWalls(floorData.rooms[10], floorData.rooms[6]);
-        //MinimizeWalls(floorData.rooms[7], floorData.rooms[3]);
-        //MinimizeWalls(floorData.rooms[1], floorData.rooms[8]);
-        //MinimizeWalls(floorData.rooms[4], floorData.rooms[12]);
-        //MinimizeWalls(floorData.rooms[11], floorData.rooms[5]);
-        //Debug.Log("<---------------------------------------------->");
-        //foreach (var wall in floorData.rooms[9].Walls.Keys)
-        //{
-        //    Debug.Log(wall);
-        //}
-        //Debug.Log("<---------------------------------------------->");
-        //foreach (RoomData fromRoom in floorData.rooms)
-        //{
-        //    foreach (RoomData toRoom in fromRoom.connectedRooms)
-        //    {
-        //        if (checkedRooms.Contains(fromRoom) || (!CanConnectCenters(fromRoom, toRoom, 2)))
-        //        {
-        //            continue;
-        //        }
-        //        (usefulWallsFrom, usefulWallsTo) = MinimizeWalls(fromRoom, toRoom);
-
-        //    }
-        //}
+        await DeleteUselessConnections();
+        TryCreateCorridor(floorData);
     }
-    void TryCreateCorridor(List<Vector2Int> fromWalls, List<Vector2Int> toWalls, RoomData fromRoom, RoomData toRoom)
+    void TryCreateCorridor(FloorData floorData)
     {
-        bool possibleToConnect = true;
-        RoomData collidedRoom = null;
-        foreach (Vector2Int from in fromWalls)
+        List<Vector2Int> usefullWallsFrom = new List<Vector2Int>();
+        List<Vector2Int> usefullWallsTo = new List<Vector2Int>();
+        foreach (RoomData fromRoom in floorData.rooms)
         {
-            foreach (Vector2Int to in toWalls)
+            foreach (RoomData toRoom in fromRoom.connectedRooms)
             {
-                possibleToConnect = true;
-                foreach (var tile in TilesOnLine(from, to))// ѕроверка на то, что лини€ не пересекает другие комнаты
-                {
-                    collidedRoom = context.floorData.WhichRoomTile(tile);
-                    if (!(collidedRoom == null || collidedRoom == fromRoom))
-                    {
-                        possibleToConnect = false;
-                        break;
-                    }
-                }
-                if (possibleToConnect)
-                {
-                    CheckWithWidht(from, to, 2);
-                    return;
-                }
+                 (usefullWallsFrom, usefullWallsTo) = MinimizeWalls(fromRoom, toRoom);
             }
         }
     }
+    public async UniTask DeleteUselessConnections()
+    {
+        var floorData = context.floorData;
+        var roomPairs = new List<(RoomData from, RoomData to)>();
+        foreach (var fromRoom in floorData.rooms)
+        {
+            foreach (var toRoom in fromRoom.connectedRooms)
+            {
+                roomPairs.Add((fromRoom, toRoom));
+            }
+        }
+
+        var linksToKeep = new ConcurrentBag<(RoomData from, RoomData to)>();
+
+        await UniTask.RunOnThreadPool(() =>
+        {
+            Parallel.ForEach(roomPairs, pair =>
+            {
+                if (CanConnectCenters(pair.from, pair.to, 4))
+                {
+                    linksToKeep.Add(pair);
+                }
+            });
+        });
+
+        // 3. ¬озвращаемс€ в главный поток дл€ обновлени€ connectedRooms
+        await UniTask.SwitchToMainThread();
+
+        foreach (var room in floorData.rooms)
+        {
+            var validConnections = linksToKeep
+                .Where(x => x.from == room)
+                .Select(x => x.to)
+                .ToHashSet();
+
+            room.connectedRooms = validConnections;
+        }
+    }
+
     bool CheckWithWidht(Vector2Int from, Vector2Int to, int widht)
     {
         for (int i = 0; i < widht - 1; i++)
@@ -125,8 +130,8 @@ public class ResolveBlockedEdges
         RoomData collidedRoom = null;
         foreach (var tilePos in TilesOnLine(from.center, to.center))
         {
-            collidedRoom = context.floorData.WhichRoomTile(tilePos);
-            if (!(collidedRoom == null || collidedRoom == from || collidedRoom == to))  
+            collidedRoom = context.floorData.GetRoomByTile(tilePos);
+            if (!(collidedRoom == null) && (collidedRoom != from) && (collidedRoom != to))
                 hits++;
             if (hits > maxHits)
             return false;
@@ -168,58 +173,5 @@ public class ResolveBlockedEdges
             }
             yield return new Vector2Int(x0, y0);
         }
-    }
-
-   
-    
-    void CreateLine(Vector3Int a, Vector3Int b)
-    {
-        var go = new GameObject("DifferentLine");
-        var lr = go.AddComponent<LineRenderer>();
-        lr.material = null;
-        lr.positionCount = 2;
-        lr.startWidth = 1f;
-        lr.endWidth = 1f;
-        lr.useWorldSpace = true;
-        lr.SetPosition(0, (Vector3)a);
-        lr.SetPosition(1, (Vector3)b);
-    }
-    void CreateLine(Vector2Int a, Vector2Int b)
-    {
-        var go = new GameObject("DifferentLine");
-        var lr = go.AddComponent<LineRenderer>();
-        lr.material = null;
-        lr.positionCount = 2;
-        lr.startWidth = 1f;
-        lr.endWidth = 1f;
-        lr.useWorldSpace = true;
-        lr.SetPosition(0, (Vector2)a);
-        lr.SetPosition(1, (Vector2)b);
-    }
-
-    void CreateLine(Vector3Int a, Vector2Int b)
-    {
-        var go = new GameObject("DifferentLine");
-        var lr = go.AddComponent<LineRenderer>();
-        lr.material = null;
-        lr.positionCount = 2;
-        lr.startWidth = 1f;
-        lr.endWidth = 1f;
-        lr.useWorldSpace = true;
-        lr.SetPosition(0, (Vector3)a);
-        lr.SetPosition(1, (Vector2)b);
-    }
-
-    void CreateLine(Vector2Int a, Vector3Int b)
-    {
-        var go = new GameObject("DifferentLine");
-        var lr = go.AddComponent<LineRenderer>();
-        lr.material = null;
-        lr.positionCount = 2;
-        lr.startWidth = 1f;
-        lr.endWidth = 1f;
-        lr.useWorldSpace = true;
-        lr.SetPosition(0, (Vector2)a);
-        lr.SetPosition(1, (Vector3)b);
     }
 }

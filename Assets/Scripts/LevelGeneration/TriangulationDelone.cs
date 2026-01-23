@@ -91,8 +91,7 @@ public class TriangulationGenerator
         }
         RemoveSuperstructureTriangles();
         triangulationFinished = true;
-        if (DrawLines)
-        DrawTriangles(triangles);
+        
         foreach(var triangle in triangles)
 {
             Vector2Int[] points = triangle.GetPoints();
@@ -143,40 +142,9 @@ public class TriangulationGenerator
         });
     }
     
-    public void DrawTriangles(List<Triangle> triangles)
-    {
-        Clear();
+    
 
-        //foreach (var t in triangles)
-        //{
-        //    var p = t.GetPoints();
-        //    Vector3 down = new Vector3(0, 1, 0);
-        //    CreateLine(ToVector3XZ(p[0]) - down, ToVector3XZ(p[1]) - down);
-        //    CreateLine(ToVector3XZ(p[1]) - down, ToVector3XZ(p[2]) - down);
-        //    CreateLine(ToVector3XZ(p[2]) - down, ToVector3XZ(p[0]) - down);
-
-
-        //    //CreateLine((Vector2)p[0], (Vector2)p[1]);
-        //    //CreateLine((Vector2)p[1], (Vector2)p[2]);
-        //    //CreateLine((Vector2)p[2], (Vector2)p[0]);
-        //}
-    }
-
-    void CreateLine(Vector3 a, Vector3 b)
-    {
-        //var go = new GameObject("Line");
-
-        //var lr = go.AddComponent<LineRenderer>();
-        //lr.material = lineMaterial;
-        //lr.positionCount = 2;
-        //lr.startWidth = 1f;
-        //lr.endWidth = 1f;
-        //lr.useWorldSpace = true;
-        //lr.SetPosition(0, a);
-        //lr.SetPosition(1, b);
-        //go.transform.parent = TriangulationHandler.transform;
-        //lines.Add(lr);
-    }
+    
 
     void Clear()
     {

@@ -48,6 +48,7 @@ public class Rasterization
                 if (clusterPixels / Mathf.Pow(CellSize, 2) >= Percent)
                 {
                     cluster.FillCell(from, to);
+                    context.floorData.AddMapRoom(from, to, cluster);
                 }
                 else
                 {

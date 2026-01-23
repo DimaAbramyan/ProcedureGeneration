@@ -19,7 +19,6 @@ public class FloorGenerationUIController : MonoBehaviour
     private int size; 
     private void Start()
     {
-        Debug.Log("залупа блять запустилась");
         inputSeed.onEndEdit.AddListener(OnSeedChanged);
         inputSize.onEndEdit.AddListener(OnSizeChanged);
         inputFrom.onEndEdit.AddListener(OnFromChanged);

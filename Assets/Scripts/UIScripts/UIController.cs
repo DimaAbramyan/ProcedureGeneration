@@ -76,7 +76,7 @@ public class SeedController : MonoBehaviour
         FloorContext context = new FloorContext
         {
             floorData = new FloorData(),
-            source = cellularTextureApplier,  // здесь назначаем источник
+            source = cellularTextureApplier, 
             fromColor = float.TryParse(inputFrom.text, out float fFrom) ? fFrom : 0f,
             toColor = float.TryParse(inputTo.text, out float fTo) ? fTo : 1f,
         };

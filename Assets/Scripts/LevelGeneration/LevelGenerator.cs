@@ -47,10 +47,12 @@ public class LevelBuilder
         
         foreach (RoomData roomData in floorData.rooms)
         {
+            Material newFloorMaterial = new Material(floorMaterial);
+            newFloorMaterial.color = Random.ColorHSV(0f, 1f, 0.5f, 1f, 0.5f, 1f);
             roomHandler = new GameObject();
             BuildMeshFromTiles(roomData, 
-                roomData.Tiles.Values.Where(t => t.type == TileData.TileType.Floor), 
-                floorMaterial, 
+                roomData.Tiles.Values.Where(t => t.type == TileData.TileType.Floor),
+                newFloorMaterial, 
                 $"Floor for {roomData.number}", 
                 roomHandler.transform, 
                 false);
@@ -61,6 +63,7 @@ public class LevelBuilder
                 roomHandler.transform, 
                 false);
             roomHandler.name = $"Комната {roomData.number}-ая, кол-во тайлов:{roomData.Tiles.Count}";
+
         }
     }
     public static GameObject BuildMeshFromTiles(RoomData room, IEnumerable<TileData> tiles, Material material, string objectName, Transform parent, bool visual)

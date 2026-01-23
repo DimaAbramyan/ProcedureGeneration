@@ -28,15 +28,18 @@ public class CameraLook : MonoBehaviour
 
     void Update()
     {
-        Vector2 mouseDelta = mouseAction.action.ReadValue<Vector2>();
+        if (!Input.GetKey(KeyCode.LeftControl))
+        {
+            Vector2 mouseDelta = mouseAction.action.ReadValue<Vector2>();
 
-        float mouseX = mouseDelta.x * sensitivity;
-        float mouseY = mouseDelta.y * sensitivity;
+            float mouseX = mouseDelta.x * sensitivity;
+            float mouseY = mouseDelta.y * sensitivity;
 
-        xRotation -= mouseY;
-        xRotation = Mathf.Clamp(xRotation, minY, maxY);
-        m_Camera.transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
+            xRotation -= mouseY;
+            xRotation = Mathf.Clamp(xRotation, minY, maxY);
+            m_Camera.transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
 
-        playerBody.Rotate(Vector3.up * mouseX);
+            playerBody.Rotate(Vector3.up * mouseX);
+        }
     }
 }
