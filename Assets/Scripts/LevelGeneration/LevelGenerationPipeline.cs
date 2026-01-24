@@ -15,7 +15,6 @@ public class FloorGenerationPipeline
 
     public async UniTask GenerateAsync()
     {
-        string statistic = "";
         GenerationTimer.Watch.Restart();
         var noiseMap = context.source.NoiseMap;
         context.mapColor = noiseMap.GetPixels();
@@ -25,7 +24,7 @@ public class FloorGenerationPipeline
         var sb = new System.Text.StringBuilder();
         var sw = new Stopwatch();
 
-        await UniTask.RunOnThreadPool(() =>
+        await UniTask.RunOnThreadPool(async() =>
         {
             sw.Restart();
             new RoomGenerator(context).Run();
@@ -41,17 +40,12 @@ public class FloorGenerationPipeline
             new TriangulationGenerator(context).Run();
             sw.Stop();
             sb.AppendLine($"TriangulationGenerator: {sw.ElapsedMilliseconds} ms");
-        });
+            
+            sw.Restart();
+            await new ResolveBlockedEdges(context).Run();
+            sw.Stop();
+            sb.AppendLine($"ResolveBlockedEdges: {sw.ElapsedMilliseconds} ms");
 
-        // --- CPU этап, но async ---
-        sw.Restart();
-        await new ResolveBlockedEdges(context).Run();
-        sw.Stop();
-        sb.AppendLine($"ResolveBlockedEdges: {sw.ElapsedMilliseconds} ms");
-
-        // --- CPU этап (ThreadPool) ---
-        await UniTask.RunOnThreadPool(() =>
-        {
             sw.Restart();
             new MinOstTreeGenerator(context).Run();
             sw.Stop();
@@ -60,14 +54,15 @@ public class FloorGenerationPipeline
 
 
         await UniTask.SwitchToMainThread();
-
-        GenerationTimer.Watch.Restart();
+        sw.Restart();
         new LevelBuilder(context).Run();
-        sb.AppendLine($"MinOstTreeGenerator: {sw.ElapsedMilliseconds} ms");
+        sw.Stop();
+        sb.AppendLine($"LevelBuilder: {sw.ElapsedMilliseconds} ms");
 
-        GenerationTimer.Watch.Restart();
+        sw.Restart();
         new VisualiseCorridors(context).Run();
-        sb.AppendLine($"MinOstTreeGenerator: {sw.ElapsedMilliseconds} ms");
+        sw.Stop();
+        sb.AppendLine($"VisualiseCorridors: {sw.ElapsedMilliseconds} ms");
 
         UnityEngine.Debug.Log(sb.ToString());
 

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 public class LevelBuilder
@@ -10,7 +11,6 @@ public class LevelBuilder
     GameObject TilesHandler;
     public GameObject floorHandler;
     GameObject tileObjInstance;
-    bool CreateVisual = false;
     private readonly FloorContext context;
     GameObject centerObj;
     Material wallMaterial;
@@ -23,19 +23,18 @@ public class LevelBuilder
         this.context = context;
     }
 
-    public void Run()
+    public async void Run()
     {
         FloorData floorData = context.floorData;
         
         centerObj = Resources.Load<GameObject>("Prefabs/CenterObj");
 
 
-        BuildFloor(floorData);
-        if (CreateVisual)
-            GenerateRoomVisual(floorData);
+        await BuildFloor(floorData);
     }
-    public void BuildFloor(FloorData floorData)
+    public async UniTask BuildFloor(FloorData floorData)
     {
+        int roomsSize = 0;
         FloorData = floorData;
         tileObj = Resources.Load<GameObject>("Prefabs/Floor");
         Renderer rend = tileObj.GetComponent<Renderer>();
@@ -62,6 +61,7 @@ public class LevelBuilder
                 $"Room_{roomData.number}_Walls", 
                 roomHandler.transform, 
                 false);
+            await UniTask.Yield();
             roomHandler.name = $"Комната {roomData.number}-ая, кол-во тайлов:{roomData.Tiles.Count}";
 
         }

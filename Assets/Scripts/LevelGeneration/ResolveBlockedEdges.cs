@@ -4,6 +4,8 @@ using System.Linq;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 using System.Threading.Tasks;
+using static UnityEditor.Experimental.AssetDatabaseExperimental.AssetDatabaseCounters;
+using UnityEngine.Rendering;
 
 
 public class ResolveBlockedEdges
@@ -30,19 +32,42 @@ public class ResolveBlockedEdges
     async UniTask ResolveImpossibleWays()
     {
         await DeleteUselessConnections();
-        TryCreateCorridor(floorData);
+        await TryCreateCorridor(floorData);
     }
-    void TryCreateCorridor(FloorData floorData)
+    public async UniTask TryCreateCorridor(FloorData floorData)
     {
         List<Vector2Int> usefullWallsFrom = new List<Vector2Int>();
         List<Vector2Int> usefullWallsTo = new List<Vector2Int>();
+        await UniTask.RunOnThreadPool(() =>
+        {
         foreach (RoomData fromRoom in floorData.rooms)
         {
             foreach (RoomData toRoom in fromRoom.connectedRooms)
             {
-                 (usefullWallsFrom, usefullWallsTo) = MinimizeWalls(fromRoom, toRoom);
+                Vector2Int fromWallBest = new Vector2Int(1, 1);
+                Vector2Int toWallBest = new Vector2Int(0, 0);
+                int bestLenght = int.MaxValue;
+                int checkLenght = 0;
+                (usefullWallsFrom, usefullWallsTo) = MinimizeWalls(fromRoom, toRoom);
+                    //foreach (Vector2Int fromWall in usefullWallsFrom)
+                    //{
+                    //    foreach (Vector2Int toWall in usefullWallsTo)
+                    //    {
+                    //        if (CanConnectWalls(fromWall, toWall, fromRoom, toRoom))
+                    //        {
+                    //            checkLenght = (fromWall - toWall).sqrMagnitude;
+                    //            if (bestLenght > checkLenght)
+                    //            {
+                    //                bestLenght = checkLenght;
+                    //                fromWallBest = fromWall;
+                    //                toWallBest = toWall;
+                    //            }
+                    //        }
+                    //    }
+                    //}
+                }
             }
-        }
+        });
     }
     public async UniTask DeleteUselessConnections()
     {
@@ -62,14 +87,13 @@ public class ResolveBlockedEdges
         {
             Parallel.ForEach(roomPairs, pair =>
             {
-                if (CanConnectCenters(pair.from, pair.to, 4))
+                if (CanConnectCenters(pair.from, pair.to))
                 {
                     linksToKeep.Add(pair);
                 }
             });
         });
 
-        // 3. ¬озвращаемс€ в главный поток дл€ обновлени€ connectedRooms
         await UniTask.SwitchToMainThread();
 
         foreach (var room in floorData.rooms)
@@ -124,7 +148,7 @@ public class ResolveBlockedEdges
 
         return flipped ? cross >= 0f : cross < 0f;
     }
-    bool CanConnectCenters(RoomData from, RoomData to, int maxHits)
+    bool CanConnectCenters(RoomData from, RoomData to, int maxHits = 0)
     {
         int hits = 0;
         RoomData collidedRoom = null;
@@ -138,7 +162,18 @@ public class ResolveBlockedEdges
         }
         return true;
     }
-    public static IEnumerable<Vector2Int> TilesOnLine(Vector2Int start, Vector2Int end)
+    bool CanConnectWalls(Vector2Int from, Vector2Int to, RoomData fromRoom, RoomData toRoom)
+    {
+        RoomData collidedRoom = null;
+        foreach (var tilePos in TilesOnLine(from, to))
+        {
+            collidedRoom = context.floorData.GetRoomByTile(tilePos);
+            if ((collidedRoom != null) && (collidedRoom != toRoom))          
+            return false;
+        }
+        return true;
+    }
+    public static IEnumerable<Vector2Int> TilesOnLine(Vector2Int start, Vector2Int end, int counter = 1)
     {
         int x0 = start.x;
         int y0 = start.y;
@@ -155,6 +190,7 @@ public class ResolveBlockedEdges
 
         while (true)
         {
+
             if (x0 == x1 && y0 == y1)
                 break;
 
@@ -171,6 +207,7 @@ public class ResolveBlockedEdges
                 err += dx;
                 y0 += sy;
             }
+
             yield return new Vector2Int(x0, y0);
         }
     }
