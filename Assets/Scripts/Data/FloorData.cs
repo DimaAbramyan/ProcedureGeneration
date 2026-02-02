@@ -7,7 +7,6 @@ public class FloorData
 {
     public Dictionary<Vector2Int, RoomData> mapRooms;
     public List<RoomData> rooms;
-    public List<Coridor> coridors;
     public int FloorCount;
     Vector2Int FloorMaxXY;
     Vector2Int FloorMinXY;
@@ -24,7 +23,6 @@ public class FloorData
     {
         mapRooms = new Dictionary<Vector2Int, RoomData>();
         rooms = new List<RoomData>();
-        coridors = new List<Coridor>();
 
         FloorMaxXY = new Vector2Int(int.MinValue, int.MinValue);
         FloorMinXY = new Vector2Int(int.MaxValue, int.MaxValue);
@@ -56,24 +54,6 @@ public class FloorData
         if (inputMax.y > FloorMaxXY.y) FloorMaxXY.y = inputMax.y;
         if (inputMin.x < FloorMinXY.x) FloorMinXY.x = inputMin.x;
         if (inputMin.y < FloorMinXY.y) FloorMinXY.y = inputMin.y;
-    }
-    public bool DoesHaveTile(Vector2Int tileToCheck)
-    {
-        foreach (RoomData Room in rooms)
-        {
-            if (Room.Tiles.ContainsKey(tileToCheck))
-            { return true; }
-        }
-        return false;
-    }
-    public RoomData WhichRoomTile(Vector2Int tileToCheck)
-    {
-        foreach (RoomData Room in rooms)
-        {
-            if (Room.Tiles.ContainsKey(tileToCheck))
-            { return Room; }
-        }
-        return null;
     }
     public Vector2Int GetFloorMinXY()
     {

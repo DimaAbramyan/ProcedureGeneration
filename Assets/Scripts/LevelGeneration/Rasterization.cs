@@ -29,6 +29,7 @@ public class Rasterization
     {
         start = cluster.GetMinCoord();
         end = cluster.GetMaxCoord();
+        CellSize = cluster.rastLevel;
 
         start = new Vector2Int(Mathf.FloorToInt((float)start.x / CellSize) * CellSize,
                                Mathf.FloorToInt((float)start.y / CellSize) * CellSize);

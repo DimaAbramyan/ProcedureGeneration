@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class VisualiseCorridors : MonoBehaviour
+public class VisualiseCorridors
 {
     private FloorContext context;
     private GameObject corridorHandler;
@@ -24,7 +24,7 @@ public class VisualiseCorridors : MonoBehaviour
     }
 
     // Преобразуем Vector2Int в Vector3 для XZ-плоскости
-    private Vector3 ToVector3XZ(Vector2Int v)
+    private Vector3 ToVector3XZ(Vector3 v)
     {
         return new Vector3(v.x, 0, v.y);
     }
@@ -46,18 +46,17 @@ public class VisualiseCorridors : MonoBehaviour
 
     private void DrawRoomConnections()
     {
+        int cnt = 0;
         foreach (var fromRoom in context.floorData.rooms)
         {
-            Vector3 fromCenter = ToVector3XZ(fromRoom.center); // Центр комнаты
-
-            foreach (var toRoom in fromRoom.connectedRooms)
+            foreach (var toRoom in fromRoom.coridors)
             {
-                Vector3 toCenter = ToVector3XZ(toRoom.center);
-
-                // Чтобы не рисовать дублирующие линии
-                if (fromRoom.GetHashCode() < toRoom.GetHashCode())
-                    CreateLine(fromCenter + new Vector3(0,0.1f,0), toCenter + new Vector3(0, 0.1f, 0));
+                cnt++;
+                Vector3 fromWall = ToVector3XZ(toRoom.Value.GetMiddleStartCoord());
+                Vector3 toWall = ToVector3XZ(toRoom.Value.GetMiddleEndCoord());
+                CreateLine(fromWall + new Vector3(0,0.1f,0), toWall + new Vector3(0, 0.1f, 0));
             }
         }
+        Debug.Log($"Коридоров: {cnt}");
     }
 }

@@ -135,16 +135,15 @@ public class RoomGenerator
         {
             roomData.AddTile(new TileData(r));
         }
-        rasterization.RoomRasterization(roomData);
         if (roomData.Tiles.Count == 0)
         {
             return;
         }
-        roomData.MakeWalls(roomData.GetMinCoord(), roomData.GetMaxCoord());
-
+       
         roomData.number = roomCount;
         roomCount++;
         floorData.AddRoom(roomData);
-        Debug.Log($"Комната {roomCount}. Пикселей: {cluster.Count}, центр: {centerPos}");
+        roomData.RecountRasterizationLevel();
+        Debug.Log($"Комната {roomCount}. Пикселей: {cluster.Count}, центр: {centerPos}, уровень растеризации: {roomData.rastLevel}");
     }
 }

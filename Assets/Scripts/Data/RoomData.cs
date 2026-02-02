@@ -5,12 +5,13 @@ using UnityEngine.UIElements;
 public class RoomData
 {
     public int number;
+    public int rastLevel;
     public Dictionary<Vector2Int, TileData> Tiles = new();
     public Dictionary<Vector2Int, TileData> Walls = new();
     public Vector2Int center { get; private set; }
     public Vector2Int MinTileXY { get; private set; }
     public Vector2Int MaxTileXY { get; private set; }
-    public HashSet<RoomData> connectedRooms;
+    public Dictionary<RoomData, CoridorData> coridors;
 
     public RoomData()
     {
@@ -18,7 +19,8 @@ public class RoomData
         center = new Vector2Int(0,0);
         MinTileXY = new Vector2Int(int.MaxValue, int.MaxValue);
         MaxTileXY = new Vector2Int(int.MinValue, int.MinValue);
-        connectedRooms = new HashSet<RoomData>();
+        rastLevel = 1;
+        coridors = new Dictionary<RoomData, CoridorData>();
     }
     public RoomData(Vector2Int centerCoord)
     {
@@ -26,7 +28,7 @@ public class RoomData
         center = centerCoord;
         MinTileXY = new Vector2Int(int.MaxValue, int.MaxValue);
         MaxTileXY = new Vector2Int(int.MinValue, int.MinValue);
-        connectedRooms = new HashSet<RoomData>();
+        coridors = new Dictionary<RoomData, CoridorData>();
     }
     public void AddTile(TileData tile)
     {
@@ -124,6 +126,26 @@ public class RoomData
             }
         }
     }
+    public void RecountRasterizationLevel()
+    {
+        int TilesCount = Tiles.Count;
+        if (TilesCount > 400 && TilesCount <= 1200)
+        {
+            rastLevel = 2;
+        }
+        if (TilesCount > 1200 && TilesCount <= 2800)
+        {
+            rastLevel = 4;
+        }
+        if ((TilesCount > 2800) && (TilesCount <= 37600)) 
+        {
+            rastLevel = 8;
+        }
+        if (TilesCount > 37600)
+        {
+            rastLevel = 16;
+        }
+    }
     bool IsTileFloor(Vector2Int TileToCheck)
     {
         return (Tiles.ContainsKey(new Vector2Int(TileToCheck.x + 1, TileToCheck.y)) &&
@@ -159,12 +181,21 @@ public class RoomData
 
         Debug.Log($"Удалено {count} тайлов");
     }
-    public void AddConectedRoom(RoomData newConectedRoom)
+    public void AddConectedRoom(RoomData toRoom)
     {
-        connectedRooms.Add(newConectedRoom);
+        if (toRoom == null)
+            return;
+
+        if (coridors.ContainsKey(toRoom))
+            return;
+
+        var corridor = new CoridorData(this, toRoom);
+        coridors.Add(toRoom, corridor);
     }
+
+
     public void RemoveConnectedRoom(RoomData newConectedRoom)
     {
-        connectedRooms.Remove(newConectedRoom);
+        coridors.Remove(newConectedRoom);
     }
 }

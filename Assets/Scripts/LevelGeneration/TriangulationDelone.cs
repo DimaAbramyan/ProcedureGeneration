@@ -109,7 +109,6 @@ public class TriangulationGenerator
                 for (int j = i + 1; j < RoomsToConnect.Length; j++)
                 {
                     RoomsToConnect[i].AddConectedRoom(RoomsToConnect[j]);
-                    RoomsToConnect[j].AddConectedRoom(RoomsToConnect[i]);
                 }
             }
         }

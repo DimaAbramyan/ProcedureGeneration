@@ -42,9 +42,14 @@ public class FloorGenerationPipeline
             sb.AppendLine($"TriangulationGenerator: {sw.ElapsedMilliseconds} ms");
             
             sw.Restart();
-            await new ResolveBlockedEdges(context).Run();
+            await new DeleteImpossibleCorridors(context).Run();
             sw.Stop();
             sb.AppendLine($"ResolveBlockedEdges: {sw.ElapsedMilliseconds} ms");
+
+            sw.Restart();
+            await new CreateCorridors(context).Run();
+            sw.Stop();
+            sb.AppendLine($"CreateCorridors: {sw.ElapsedMilliseconds} ms");
 
             sw.Restart();
             new MinOstTreeGenerator(context).Run();
