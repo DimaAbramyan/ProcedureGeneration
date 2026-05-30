@@ -11,10 +11,13 @@ public class FloorGenerationUIController : MonoBehaviour
     [SerializeField] private TMP_InputField inputTo;
     [SerializeField] private TMP_InputField inputCellSize;
     [SerializeField] private TMP_InputField inputPercent;
+    [SerializeField] private TMP_InputField inputCoridorPercent;
 
     [Header("Visuals")]
     [SerializeField] private CellularTextureApplier cellularTextureApplier;
     [SerializeField] private GameObject tilePrefab;
+
+    [SerializeField] private GameObject LevelHandler;
     private uint seed;
     private int size; 
     private void Start()
@@ -25,6 +28,7 @@ public class FloorGenerationUIController : MonoBehaviour
         inputTo.onEndEdit.AddListener(OnToChanged);
         inputCellSize.onEndEdit.AddListener(OnCellSizeChanged);
         inputPercent.onEndEdit.AddListener(OnPercentChanged);
+        inputCoridorPercent.onEndEdit.AddListener(OnCoridorPercentChanged);
     }
 
     #region UI Callbacks
@@ -56,7 +60,32 @@ public class FloorGenerationUIController : MonoBehaviour
     private void OnFromChanged(string text) { }
     private void OnToChanged(string text) { }
     private void OnCellSizeChanged(string text) { }
-    private void OnPercentChanged(string text) { }
+    private void OnPercentChanged(string text)
+    {
+        if (float.TryParse(text, out float value))
+        {
+            value = Mathf.Clamp01(value);
+
+            inputPercent.text = value.ToString("0.##");
+        }
+        else
+        {
+            inputPercent.text = "0";
+        }
+    }
+private void OnCoridorPercentChanged(string text)
+    {
+        if (float.TryParse(text, out float value))
+        {
+            value = Mathf.Clamp01(value);
+
+            inputCoridorPercent.text = value.ToString("0.##");
+        }
+        else
+        {
+            inputCoridorPercent.text = "0";
+        }
+    }
 
     #endregion
     public void ApplyNewSeed()
@@ -74,7 +103,16 @@ public class FloorGenerationUIController : MonoBehaviour
     public void GenerateFloor()
     {
         Debug.Log("Старт генерации пола");
+        foreach (Transform child in LevelHandler.transform)
+        {
+            Destroy(child.gameObject);
+        }
+        GameObject coridors = GameObject.Find("Corridors");
 
+        if (coridors != null)
+        {
+            Destroy(coridors);
+        }
         FloorContext context = new FloorContext
         {
             floorData = new FloorData(),
@@ -82,14 +120,18 @@ public class FloorGenerationUIController : MonoBehaviour
             tilePrefab = tilePrefab,
             fromColor = float.TryParse(inputFrom.text, out float fFrom) ? fFrom : 0f,
             toColor = float.TryParse(inputTo.text, out float fTo) ? fTo : 1f,
+            coridorPercent = float.TryParse(inputCoridorPercent.text, out float corPerc)
+    ? Mathf.Clamp01(corPerc)
+    : 1f,
             seed = seed
         };
-
         context.rasterization = new Rasterization(context)
         {
             CellSize = int.TryParse(inputCellSize.text, out int cs) ? cs : 8,
-            
-            Percent = float.TryParse(inputPercent.text, out float perc) ? perc : 0.5f
+
+            Percent = float.TryParse(inputPercent.text, out float perc)
+    ? Mathf.Clamp01(perc)
+    : 0.5f
         };
         Debug.Log("CellSize: "+inputCellSize);
         Debug.Log(int.TryParse(inputCellSize.text, out int f) ? f : 8);

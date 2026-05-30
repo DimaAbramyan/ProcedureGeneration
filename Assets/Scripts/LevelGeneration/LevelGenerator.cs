@@ -15,6 +15,7 @@ public class LevelBuilder
     GameObject centerObj;
     Material wallMaterial;
     Material floorMaterial;
+    Material corridorMaterial;
 
     GameObject roomHandler;
 
@@ -34,7 +35,7 @@ public class LevelBuilder
     }
     public async UniTask BuildFloor(FloorData floorData)
     {
-        int roomsSize = 0;
+        Transform parent = GameObject.Find("LevelHandler").transform;
         FloorData = floorData;
         tileObj = Resources.Load<GameObject>("Prefabs/Floor");
         Renderer rend = tileObj.GetComponent<Renderer>();
@@ -42,31 +43,41 @@ public class LevelBuilder
         wallMaterial.color = Color.blue;
         floorMaterial = new Material(rend.sharedMaterial);
         floorMaterial.color = Color.green;
+        corridorMaterial = new Material(rend.sharedMaterial);
+        corridorMaterial.color = Color.brown;
         Material mat = tileObj.gameObject.GetComponent<Renderer>().sharedMaterial;
         
-        foreach (RoomData roomData in floorData.rooms)
+        foreach (RoomData roomData in floorData.RoomByID.Values)
         {
             Material newFloorMaterial = new Material(floorMaterial);
             newFloorMaterial.color = Random.ColorHSV(0f, 1f, 0.5f, 1f, 0.5f, 1f);
             roomHandler = new GameObject();
-            BuildMeshFromTiles(roomData, 
-                roomData.Tiles.Values.Where(t => t.type == TileData.TileType.Floor),
+            BuildMeshFromTiles(roomData.Tiles.Values.Where(t => t.type == TileData.TileType.Floor),
                 newFloorMaterial, 
-                $"Floor for {roomData.number}", 
+                $"Floor for {roomData.id}", 
                 roomHandler.transform, 
-                false);
-            BuildMeshFromTiles(roomData, 
-                roomData.Walls.Values, 
+                false).transform.SetParent(parent);
+            BuildMeshFromTiles(roomData.Walls.Values, 
                 wallMaterial, 
-                $"Room_{roomData.number}_Walls", 
+                $"Room_{roomData.id}_Walls", 
                 roomHandler.transform, 
-                false);
+                false).transform.SetParent(parent);
             await UniTask.Yield();
-            roomHandler.name = $"Комната {roomData.number}-ая, кол-во тайлов:{roomData.Tiles.Count}";
+            roomHandler.name = $"Комната {roomData.id}-ая, кол-во тайлов:{roomData.Tiles.Count}";
 
         }
+        foreach (CoridorData coridorData in floorData.coridors.Values)
+        {
+            var road= BuildMeshFromTiles(coridorData.Tiles,
+                corridorMaterial,
+                $"Coridor({coridorData.startCor}, {coridorData.endCor}",
+                roomHandler.transform,
+                false);
+            road.transform.SetParent(parent);
+            road.transform.position -= new Vector3(0, 0.001f);
+        }
     }
-    public static GameObject BuildMeshFromTiles(RoomData room, IEnumerable<TileData> tiles, Material material, string objectName, Transform parent, bool visual)
+    public static GameObject BuildMeshFromTiles(IEnumerable<TileData> tiles, Material material, string objectName, Transform parent, bool visual)
     {
         List<Vector3> vertices = new();
         List<int> triangles = new();
@@ -128,9 +139,9 @@ public class LevelBuilder
     {
         tileObj = Resources.Load<GameObject>("Prefabs/Tile");
         floorHandler = new GameObject();
-        foreach (RoomData roomData in floorData.rooms)
+        foreach (RoomData roomData in floorData.RoomByID.Values)
         { 
-        var roomCount = floorData.rooms.Count;
+        var roomCount = floorData.RoomByID.Values.Count;
         GameObject TilesHandler = new GameObject();
         TilesHandler.name = $"{roomCount}-ая комната, содержит {roomData.Tiles.Count} тайлов";
         GameObject tileObjInstance;

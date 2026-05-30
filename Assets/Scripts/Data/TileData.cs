@@ -11,7 +11,9 @@ public class TileData
     public enum TileType
     {
         Wall,
-        Floor
+        Floor,
+        CorridorFloor
+
     }
     public TileData(Vector2Int coord, TileType type)
     {

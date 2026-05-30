@@ -5,48 +5,57 @@ using Unity.VisualScripting;
 using UnityEngine;
 public class FloorData
 {
-    public Dictionary<Vector2Int, RoomData> mapRooms;
-    public List<RoomData> rooms;
-    public int FloorCount;
+    private Dictionary<int, List<CellSpan>> rows = new();
+    public Dictionary<int, RoomData> RoomByID;
+    public Dictionary<(int a, int b), CoridorData> coridors;
     Vector2Int FloorMaxXY;
     Vector2Int FloorMinXY;
-    public FloorData(List<RoomData> clusters)
-    {
-        foreach (RoomData cluster in clusters)
-        {
-            if (cluster == null) continue;
-            rooms.Add(cluster);
-            CheckMinMaxXY(cluster.MinTileXY, cluster.MaxTileXY);
-        }
-    }
+
+    public int FloorCount;
     public FloorData()
     {
-        mapRooms = new Dictionary<Vector2Int, RoomData>();
-        rooms = new List<RoomData>();
+        coridors = new Dictionary<(int a, int b), CoridorData>();
+        RoomByID = new Dictionary<int, RoomData>();
+        rows = new Dictionary<int, List<CellSpan>>();
 
         FloorMaxXY = new Vector2Int(int.MinValue, int.MinValue);
         FloorMinXY = new Vector2Int(int.MaxValue, int.MaxValue);
     }
     public void AddMapRoom(Vector2Int from, Vector2Int to, RoomData room)
     {
-        for (int i = from.x; i < to.x; i++)
+        for (int y = from.y; y <= to.y; y++)
         {
-            for (int j = from.y; j < to.y; j++)
+            if (!rows.TryGetValue(y, out var spans))
             {
-                mapRooms.Add(new Vector2Int(i, j), room);
+                spans = new List<CellSpan>();
+                rows[y] = spans;
             }
+
+            spans.Add(new CellSpan
+            {
+                xMin = (ushort)from.x,
+                xMax = (ushort)to.x,
+                room = room
+            });
         }
     }
     public RoomData GetRoomByTile(Vector2Int coord)
     {
-        if (mapRooms.TryGetValue(coord, out var res))
-        return res;
+        if (!rows.TryGetValue(coord.y, out var spans))
+            return null;
+
+        foreach (var span in spans)
+        {
+            if (span.Contains(coord.x))
+                return span.room;
+        }
+
         return null;
     }
-    public void AddRoom(RoomData Room)
+    public void AddRoom(RoomData room)
     {
-        rooms.Add(Room);
-        CheckMinMaxXY(Room.MinTileXY, Room.MaxTileXY);
+        RoomByID.Add(room.id, room);
+        CheckMinMaxXY(room.MinTileXY, room.MaxTileXY);
     }
     private void CheckMinMaxXY(Vector2Int inputMin, Vector2Int inputMax)
     {
@@ -65,13 +74,11 @@ public class FloorData
     }
     public RoomData GetRoomDataByCenter(Vector2Int roomCenter)
     {
-        foreach (var room in rooms)
-        {
+        foreach (var room in RoomByID.Values)
             if (room.center == roomCenter)
-                    {
                 return room;
-            }
-        }
+
         return null;
     }
+    
 }

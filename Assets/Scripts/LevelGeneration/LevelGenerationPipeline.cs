@@ -17,6 +17,7 @@ public class FloorGenerationPipeline
     {
         GenerationTimer.Watch.Restart();
         var noiseMap = context.source.NoiseMap;
+
         context.mapColor = noiseMap.GetPixels();
         context.mapWidht = noiseMap.width;
         context.mapHeight = noiseMap.height;
@@ -46,16 +47,19 @@ public class FloorGenerationPipeline
             sw.Stop();
             sb.AppendLine($"ResolveBlockedEdges: {sw.ElapsedMilliseconds} ms");
 
+            UnityEngine.Debug.Log("Начали строить коридоры");
             sw.Restart();
             await new CreateCorridors(context).Run();
             sw.Stop();
             sb.AppendLine($"CreateCorridors: {sw.ElapsedMilliseconds} ms");
 
+            UnityEngine.Debug.Log("Закончили строить коридоры");
             sw.Restart();
             new MinOstTreeGenerator(context).Run();
             sw.Stop();
             sb.AppendLine($"MinOstTreeGenerator: {sw.ElapsedMilliseconds} ms");
-        });
+
+           });
 
 
         await UniTask.SwitchToMainThread();
@@ -70,6 +74,11 @@ public class FloorGenerationPipeline
         sb.AppendLine($"VisualiseCorridors: {sw.ElapsedMilliseconds} ms");
 
         UnityEngine.Debug.Log(sb.ToString());
+        foreach (var room in context.floorData.RoomByID)
+        {
+            UnityEngine.Debug.Log(room.Key);
+        }
+        UnityEngine.Debug.Log(context.floorData.RoomByID.Count);
 
     }
 }

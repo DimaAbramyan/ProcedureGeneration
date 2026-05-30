@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class TriangulationGenerator
 {
+    HashSet<(RoomData, RoomData)> edges;
+
     GameObject TriangulationHandler;
     bool DrawLines = false;
     bool triangulationFinished = false;
@@ -43,7 +45,7 @@ public class TriangulationGenerator
             superstructure
         };
         unsortedPoints = new List<Vector2Int>();
-        foreach (RoomData room in floorData.rooms)
+        foreach (RoomData room in floorData.RoomByID.Values)
         {
             unsortedPoints.Add(room.center);
         }
@@ -74,7 +76,7 @@ public class TriangulationGenerator
                 int count = 0;
                 foreach (var e2 in edges)
                 {
-                    if ((e.a == e2.a && e.b == e2.b) || (e.a == e2.b && e.b == e2.a))
+                    if ((e.A == e2.A && e.B == e2.B) || (e.A == e2.B && e.B == e2.A))
                         count++;
                 }
                 if (count == 1)
@@ -86,13 +88,13 @@ public class TriangulationGenerator
 
             foreach (var e in boundary)
             {
-                triangles.Add(new Triangle(e.a,e.b, point));
+                triangles.Add(new Triangle(e.A,e.B, point));
             }
         }
         RemoveSuperstructureTriangles();
         triangulationFinished = true;
-        
-        foreach(var triangle in triangles)
+        context.triangles = triangles;
+        foreach (var triangle in triangles)
 {
             Vector2Int[] points = triangle.GetPoints();
             RoomData[] RoomsToConnect = new RoomData[3];
@@ -108,11 +110,11 @@ public class TriangulationGenerator
                     Debug.LogWarning($"Комната с центром {points[i]} не найдена!");
                 for (int j = i + 1; j < RoomsToConnect.Length; j++)
                 {
-                    RoomsToConnect[i].AddConectedRoom(RoomsToConnect[j]);
+                    RoomsToConnect[i].AddConectedRoom(floorData, RoomsToConnect[j]);
                 }
             }
         }
-        foreach (var roomData in context.floorData.rooms)
+        foreach (var roomData in context.floorData.RoomByID.Values)
         {
            // Debug.Log($"Номер комнаты: {roomData.number},его центр: {roomData.center}, число соседей: {roomData.connectedRooms.Count}");
         }

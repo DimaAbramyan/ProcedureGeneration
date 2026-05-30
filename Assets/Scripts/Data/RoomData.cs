@@ -1,34 +1,27 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 public class RoomData
 {
-    public int number;
+    public int id;
     public int rastLevel;
+    public FloorData floor;
     public Dictionary<Vector2Int, TileData> Tiles = new();
     public Dictionary<Vector2Int, TileData> Walls = new();
     public Vector2Int center { get; private set; }
     public Vector2Int MinTileXY { get; private set; }
     public Vector2Int MaxTileXY { get; private set; }
-    public Dictionary<RoomData, CoridorData> coridors;
 
-    public RoomData()
+    public RoomData(FloorData floor)
     {
+        this.floor = floor;
         Tiles = new Dictionary<Vector2Int, TileData>();
         center = new Vector2Int(0,0);
         MinTileXY = new Vector2Int(int.MaxValue, int.MaxValue);
         MaxTileXY = new Vector2Int(int.MinValue, int.MinValue);
         rastLevel = 1;
-        coridors = new Dictionary<RoomData, CoridorData>();
-    }
-    public RoomData(Vector2Int centerCoord)
-    {
-        Tiles = new Dictionary<Vector2Int, TileData>();
-        center = centerCoord;
-        MinTileXY = new Vector2Int(int.MaxValue, int.MaxValue);
-        MaxTileXY = new Vector2Int(int.MinValue, int.MinValue);
-        coridors = new Dictionary<RoomData, CoridorData>();
     }
     public void AddTile(TileData tile)
     {
@@ -129,7 +122,7 @@ public class RoomData
     public void RecountRasterizationLevel()
     {
         int TilesCount = Tiles.Count;
-        if (TilesCount > 400 && TilesCount <= 1200)
+        if (TilesCount <= 1200)
         {
             rastLevel = 2;
         }
@@ -137,13 +130,9 @@ public class RoomData
         {
             rastLevel = 4;
         }
-        if ((TilesCount > 2800) && (TilesCount <= 37600)) 
+        if ((TilesCount > 2800))
         {
             rastLevel = 8;
-        }
-        if (TilesCount > 37600)
-        {
-            rastLevel = 16;
         }
     }
     bool IsTileFloor(Vector2Int TileToCheck)
@@ -181,21 +170,28 @@ public class RoomData
 
         Debug.Log($"Удалено {count} тайлов");
     }
-    public void AddConectedRoom(RoomData toRoom)
+    public void AddConectedRoom(FloorData floorData, RoomData toRoom)
     {
-        if (toRoom == null)
+        if (toRoom == null || toRoom == this)
             return;
 
-        if (coridors.ContainsKey(toRoom))
+        (int a, int b) key =
+        (
+            Mathf.Min(id, toRoom.id),
+            Mathf.Max(id, toRoom.id)
+        );
+        if (floorData.coridors.ContainsKey(key))
             return;
+        Debug.Log($"ADD {id} -> {toRoom.id}");
 
         var corridor = new CoridorData(this, toRoom);
-        coridors.Add(toRoom, corridor);
+
+        floorData.coridors.Add(key, corridor);
     }
 
 
     public void RemoveConnectedRoom(RoomData newConectedRoom)
     {
-        coridors.Remove(newConectedRoom);
+        floor.coridors.Remove((id, newConectedRoom.id));
     }
 }

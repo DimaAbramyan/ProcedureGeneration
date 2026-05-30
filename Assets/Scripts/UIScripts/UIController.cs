@@ -71,17 +71,4 @@ public class SeedController : MonoBehaviour
             generateRooms.rasterization.Percent = percent;
         }
     }
-    public void GenerateRoom()
-    {
-        FloorContext context = new FloorContext
-        {
-            floorData = new FloorData(),
-            source = cellularTextureApplier, 
-            fromColor = float.TryParse(inputFrom.text, out float fFrom) ? fFrom : 0f,
-            toColor = float.TryParse(inputTo.text, out float fTo) ? fTo : 1f,
-        };
-
-        RoomGenerator roomGen = new RoomGenerator(context);
-        roomGen.Run();
-    }
 }

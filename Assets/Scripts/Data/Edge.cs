@@ -4,16 +4,21 @@ using UnityEngine;
 
 public struct Edge
 {
-    public Vector2Int a;
-    public Vector2Int b;
+    public Vector2Int A;
+    public Vector2Int B;
+
+
+    public float Weight;
 
     public Edge(Vector2Int a, Vector2Int b)
     {
-        this.a = a;
-        this.b = b;
+        A = a;
+        B = b;
+
+        Weight = Vector2Int.Distance(a, b);
     }
     public float GetDistance()
     { 
-      return Vector2Int.Distance(this.a, this.b);
+      return Vector2Int.Distance(A, B);
     }
 }

@@ -1,262 +1,291 @@
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEngine;
+п»їusing System.Collections.Generic;
+using System.Diagnostics;
+using System.Threading;
 using Cysharp.Threading.Tasks;
-using System.Threading.Tasks;
+using UnityEngine;
+
 public class CreateCorridors
 {
     FloorContext context;
     FloorData floorData;
 
     public CreateCorridors(FloorContext context)
-    {  
-        this.context = context; 
+    {
+        this.context = context;
     }
 
     public async UniTask Run()
     {
         floorData = context.floorData;
         await TryCreateCorridor(floorData);
-        //MinimizeWalls(floorData.rooms[4], floorData.rooms[1]);
-        //MinimizeWalls(floorData.rooms[7], floorData.rooms[10]);
-        //MinimizeWalls(floorData.rooms[25], floorData.rooms[17]);
-        //MinimizeWalls(floorData.rooms[0], floorData.rooms[20]);
     }
+
     public async UniTask TryCreateCorridor(FloorData floorData)
     {
-        var tasks = new List<UniTask>();
-        
-        foreach (RoomData fromRoom in floorData.rooms)
-        {
-            foreach (RoomData toRoom in fromRoom.coridors.Keys)
-            {
-                var from = fromRoom;
-                var to = toRoom;
+        int max = Mathf.Max(1, System.Environment.ProcessorCount - 1);
+        var semaphore = new SemaphoreSlim(max);
 
-                tasks.Add(
-                    UniTask.RunOnThreadPool(() =>
-                    {
-                        PathFindAlgorithm(from, to, Mathf.Min(from.rastLevel, to.rastLevel));
-                    })
-                );
+        var tasks = floorData.coridors.Keys.Select(async key =>
+        {
+            await semaphore.WaitAsync();
+            try
+            {
+                var from = floorData.RoomByID[key.Item1];
+                var to = floorData.RoomByID[key.Item2];
+
+                await UniTask.RunOnThreadPool(() =>
+                {
+                    PathFindAlgorithm(from, to, Mathf.Min(from.rastLevel, to.rastLevel));
+                });
             }
-        }
+            finally
+            {
+                semaphore.Release();
+            }
+        });
 
         await UniTask.WhenAll(tasks);
     }
+
     void PathFindAlgorithm(RoomData fromRoom, RoomData toRoom, int rast)
     {
+        bool RoomsSwapped = false;
+
+        Vector2Int minXY = new(int.MaxValue, int.MaxValue);
+        Vector2Int maxXY = new(int.MinValue, int.MinValue);
+
         Vector2 centersPerpend;
 
-        Vector2Int minXY = new Vector2Int(int.MaxValue, int.MaxValue);
-        Vector2Int maxXY = new Vector2Int(int.MinValue, int.MinValue);
+        HashSet<Vector2Int> usefullWallsFrom = new();
+        HashSet<Vector2Int> usefullWallsTo = new();
 
-        HashSet<Vector2Int> usefullWallsFrom = new HashSet<Vector2Int>();
-        HashSet<Vector2Int> usefullWallsTo = new HashSet<Vector2Int>();
+        HashSet<Vector2Int> rasteredFromRoomWalls = new();
+        HashSet<Vector2Int> rasteredToRoomWalls = new();
+        HashSet<Vector2Int> obstacles = new();
 
-        HashSet<Vector2Int> rasteredFromRoomWalls = new HashSet<Vector2Int>();
-        HashSet<Vector2Int> rasteredToRoomWalls = new HashSet<Vector2Int>();
-        HashSet<Vector2Int> obstacles = new HashSet<Vector2Int>();
-
-        Vector2Int startCorridor = new Vector2Int();
-        Vector2Int endCorridor = new Vector2Int();
+        Vector2Int startCorridor = new Vector2Int(-1, -1);
+        Vector2Int endCorridor = new Vector2Int(-1, -1);
 
         (minXY, maxXY) = MinimizeWalls();
+
         BuildRasterizedSearchSpace();
         SetFromAsMinimum();
         FindClosestWay();
-        Debug.Log($"Из конматы {fromRoom.number} в {toRoom.number} начало корридора: {startCorridor}, конец:{endCorridor}");
-        (Vector2Int minXY, Vector2Int maxXY) MinimizeWalls()
+
+        BuildCorridor();
+
+        void BuildCorridor()
         {
-            Vector2Int centerFrom = fromRoom.center;
-            Vector2Int centerTo = toRoom.center;
-            Vector2Int centersConnection = centerFrom - centerTo;
+            if (startCorridor.x < 0 || endCorridor.x < 0)
+                return;
 
-            centersPerpend = new Vector2(-centersConnection.y, centersConnection.x).normalized;
-            float angle = Mathf.Atan2(centersConnection.y, centersConnection.x) * Mathf.Rad2Deg + 180;
+            Vector2Int a = startCorridor / rast;
+            Vector2Int b = endCorridor / rast;
 
-            //Debug.Log($"{fromRoom.number}, {toRoom.number}, угол между ними {angle}");
+            foreach (var cell in TileAlgorithm.TilesOnLineSmooth(a, b))
+            {
+                for (int dx = 0; dx < rast; dx++)
+                    for (int dy = 0; dy < rast; dy++)
+                    {
+                        var world = new Vector2Int(
+                            cell.x * rast + dx,
+                            cell.y * rast + dy
+                        );
+
+                        var key = GetCorridorKey(fromRoom.id, toRoom.id);
+
+                        lock (floorData.coridors)
+                        {
+                            if (!floorData.coridors.TryGetValue(key, out var corridor))
+                                continue;
+
+                            if (corridor == null)
+                            {
+                                UnityEngine.Debug.LogError($"corridor is null for key {key}");
+                                continue;
+                            }
+
+                            if (corridor.Tiles == null)
+                            {
+                                UnityEngine.Debug.LogError($"corridor.Tiles is null for key {key}, from={corridor.FromRoom?.id} to={corridor.ToRoom?.id}");
+                                continue;
+                            }
+
+                            corridor.MarkCorridor(world);
+                        }
+                    }
+            }
+        }
+
+        (Vector2Int, Vector2Int) MinimizeWalls()
+        {
+            Vector2 centerFrom = fromRoom.center;
+            Vector2 centerTo = toRoom.center;
+
+            Vector2 dir = centerFrom - centerTo;
+            centersPerpend = new Vector2(-dir.y, dir.x).normalized;
+
             FindMinMax(fromRoom, true);
             FindMinMax(toRoom, false);
+
             return (minXY, maxXY);
 
-
-
-            void FindMinMax(RoomData room, bool flippedRooms)
+            void FindMinMax(RoomData room, bool flipped)
             {
-                var checkingWalls = room.Walls.ToList();
-                foreach (var wall in checkingWalls)
+                foreach (var w in room.Walls)
                 {
-                    if (IsOnSide(wall.Key, room.center, centersPerpend, flippedRooms))
+                    if (IsOnSide(w.Key, room.center, centersPerpend, flipped))
                     {
-                        if (flippedRooms)
-                            usefullWallsFrom.Add(wall.Key);
-                        else
-                            usefullWallsTo.Add(wall.Key);
-                        CheckNewMinMaxXY(wall.Key);
-                    }
-                }
+                        if (flipped) usefullWallsFrom.Add(w.Key);
+                        else usefullWallsTo.Add(w.Key);
 
-
-
-                void CheckNewMinMaxXY(Vector2Int coordChecking)
-                {
-                    if (coordChecking.x < minXY.x)
-                    {
-                        minXY.x = coordChecking.x;
-                    }
-                    if (coordChecking.y < minXY.y)
-                    {
-                        minXY.y = coordChecking.y;
-                    }
-                    if (coordChecking.x > maxXY.x)
-                    {
-                        maxXY.x = coordChecking.x;
-                    }
-                    if (coordChecking.y > maxXY.y)
-                    {
-                        maxXY.y = coordChecking.y;
+                        minXY = Vector2Int.Min(minXY, w.Key);
+                        maxXY = Vector2Int.Max(maxXY, w.Key);
                     }
                 }
             }
-
-
-
-
         }
+
         void SetFromAsMinimum()
         {
             if (rasteredFromRoomWalls.Count > rasteredToRoomWalls.Count)
             {
-                (rasteredFromRoomWalls, rasteredToRoomWalls) = (rasteredToRoomWalls, rasteredFromRoomWalls);
+                RoomsSwapped = true;
+
+                (rasteredFromRoomWalls, rasteredToRoomWalls) =
+                    (rasteredToRoomWalls, rasteredFromRoomWalls);
             }
         }
-
-
 
         bool IsOnSide(Vector2 point, Vector2 linePoint, Vector2 lineDir, bool flipped)
         {
             Vector2 v = point - linePoint;
             float cross = lineDir.x * v.y - lineDir.y * v.x;
-
             return flipped ? cross >= 0f : cross < 0f;
         }
 
-
-
         void BuildRasterizedSearchSpace()
         {
-            for (int x = minXY.x; x <= maxXY.x; ++x)
-            {
-                for (int y = minXY.y; y <= maxXY.y; ++y)
+            Vector2Int rMinXY = new(
+                Mathf.FloorToInt((float)minXY.x / rast),
+                Mathf.FloorToInt((float)minXY.y / rast)
+            );
+
+            Vector2Int rMaxXY = new(
+                Mathf.FloorToInt((float)maxXY.x / rast),
+                Mathf.FloorToInt((float)maxXY.y / rast)
+            );
+
+            rasteredFromRoomWalls.Clear();
+            rasteredToRoomWalls.Clear();
+            obstacles.Clear();
+
+            for (int x = rMinXY.x; x <= rMaxXY.x; x++)
+                for (int y = rMinXY.y; y <= rMaxXY.y; y++)
                 {
-                    Vector2Int tileCoord = new Vector2Int(x, y);
-                    RoomData checkedRoom = floorData.GetRoomByTile(tileCoord);
-                    if (checkedRoom == null)
-                        continue;
-                    if ((checkedRoom != fromRoom) && (checkedRoom != toRoom))
+                    Vector2Int cell = new(x, y);
+
+                    bool isObstacle = false;
+                    bool isFrom = false;
+                    bool isTo = false;
+
+                    for (int dx = 0; dx < rast; dx++)
+                        for (int dy = 0; dy < rast; dy++)
+                        {
+                            Vector2Int world = new(
+                                cell.x * rast + dx,
+                                cell.y * rast + dy
+                            );
+
+                            var room = floorData.GetRoomByTile(world);
+                            if (room == null) continue;
+
+                            if (room != fromRoom && room != toRoom)
+                                isObstacle = true;
+
+                            if (room == fromRoom && usefullWallsFrom.Contains(world))
+                                isFrom = true;
+
+                            if (room == toRoom && usefullWallsTo.Contains(world))
+                                isTo = true;
+                        }
+
+                    if (isObstacle)
                     {
-                        obstacles.Add(tileCoord / rast);
+                        obstacles.Add(cell);
                         continue;
                     }
-                    if (checkedRoom == fromRoom && usefullWallsFrom.Contains(tileCoord))
-                    {
-                        rasteredFromRoomWalls.Add(tileCoord / rast);
-                        continue;
-                    }
-                    if (checkedRoom == toRoom && usefullWallsTo.Contains(tileCoord))
-                    {
-                        rasteredToRoomWalls.Add(tileCoord / rast);
-                        continue;
-                    }
+
+                    if (isFrom) rasteredFromRoomWalls.Add(cell);
+                    if (isTo) rasteredToRoomWalls.Add(cell);
                 }
-            }
-            minXY = minXY / rast;
-            maxXY = maxXY / rast;
+
+            minXY = rMinXY;
+            maxXY = rMaxXY;
         }
+
         void FindClosestWay()
         {
-            int maxRombSize = 75;
-            foreach (var fromWall in rasteredFromRoomWalls)
+            int bestR = int.MaxValue;
+            int bestSkew = int.MaxValue;
+            int maxRadius = 100;
+
+            foreach (var from in rasteredFromRoomWalls)
             {
-                int rombSize = 1;
-                while (rombSize <= maxRombSize)
+                for (int r = 1; r <= Mathf.Min(bestR, maxRadius); r++)
                 {
-                    foreach (var tile in IterateManhattanDiamondClamped(fromWall, rombSize))
+                    foreach (var to in Iterate(from, r))
                     {
-                        if (rasteredToRoomWalls.Contains(tile))
-                        {
-                            if (CanConnectWalls(fromWall, tile))
-                            {
-                                maxRombSize = rombSize;
-                                startCorridor = fromWall * rast;
-                                endCorridor = tile * rast;
-                                break;
-                            }
-                        }
-                    }
-                    rombSize++;
-                }
-            }
-
-            if (fromRoom.coridors.TryGetValue(toRoom, out CoridorData corridor))
-            {
-                corridor.SetStartEndCoord(GetAllTiles(startCorridor), GetAllTiles(endCorridor));
-            }
-
-
-
-            IEnumerable<Vector2Int> IterateManhattanDiamondClamped(Vector2Int center,int radius)
-            {
-                for (int dx = -radius; dx <= radius; dx++)
-                {
-                    int maxDy = radius - Mathf.Abs(dx);
-
-                    int x = center.x + dx;
-                    if (x < minXY.x || x > maxXY.x)
-                        continue;
-
-                    for (int dy = -maxDy; dy <= maxDy; dy++)
-                    {
-                        int y = center.y + dy;
-                        if (y < minXY.y || y > maxXY.y)
+                        if (!rasteredToRoomWalls.Contains(to))
+                            continue;
+                        if (!CanConnect(from, to))
                             continue;
 
-                        yield return new Vector2Int(x, y);
+                        int skew = Mathf.Abs(from.x - to.x) + Mathf.Abs(from.y - to.y);
+
+                        if (r < bestR || (r == bestR && skew < bestSkew))
+                        {
+                            bestR = r;
+                            bestSkew = skew;
+                            startCorridor = from * rast;
+                            endCorridor = to * rast;
+                        }
                     }
                 }
             }
-
-
-
-            bool CanConnectWalls(Vector2Int from, Vector2Int to)
-            {
-                foreach (var tilePos in TileAlgorithm.TilesOnLine(from, to))
-                {
-                    if (obstacles.Contains(tilePos) || rasteredFromRoomWalls.Contains(tilePos))
-                        return false;
-                }
-                return true;
-            }
-
-
-
-            HashSet<Vector2Int> GetAllTiles(Vector2Int tile)
-            {
-                HashSet<Vector2Int> result = new HashSet<Vector2Int>();
-                for (int i = 0; i < rast; i++)
-                {
-                    for (int j = 0; j < rast; j++)
-                    {
-                        result.Add(tile + new Vector2Int(i,j));
-                    }
-                }
-                return result;
-            }
-
-
-
         }
+
+        IEnumerable<Vector2Int> Iterate(Vector2Int center, int radius)
+        {
+            for (int dx = -radius; dx <= radius; dx++)
+            {
+                int maxDy = radius - Mathf.Abs(dx);
+
+                for (int dy = -maxDy; dy <= maxDy; dy++)
+                {
+                    Vector2Int p = center + new Vector2Int(dx, dy);
+
+                    if (p.x < minXY.x || p.x > maxXY.x) continue;
+                    if (p.y < minXY.y || p.y > maxXY.y) continue;
+
+                    yield return p;
+                }
+            }
+        }
+
+        bool CanConnect(Vector2Int a, Vector2Int b)
+        {
+            foreach (var p in TileAlgorithm.TilesOnLine(a, b))
+            {
+                if (obstacles.Contains(p))
+                    return false;
+            }
+            return true;
+        }
+    }
+
+    public (int, int) GetCorridorKey(int a, int b)
+    {
+        return (Mathf.Min(a, b), Mathf.Max(a, b));
     }
 }

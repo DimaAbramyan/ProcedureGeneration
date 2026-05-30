@@ -18,12 +18,12 @@ public class VisualiseCorridors
         if (context == null || context.floorData == null)
             return;
 
-        // Создаём контейнер для линий
         corridorHandler = new GameObject("Corridors");
-        DrawRoomConnections();
-    }
+        //DrawRoomConnectionsVisual();
+        //CreateRoomConnections();
 
-    // Преобразуем Vector2Int в Vector3 для XZ-плоскости
+	}
+
     private Vector3 ToVector3XZ(Vector3 v)
     {
         return new Vector3(v.x, 0, v.y);
@@ -44,19 +44,25 @@ public class VisualiseCorridors
         lines.Add(lr);
     }
 
-    private void DrawRoomConnections()
+    private void DrawRoomConnectionsVisual()
     {
         int cnt = 0;
-        foreach (var fromRoom in context.floorData.rooms)
-        {
-            foreach (var toRoom in fromRoom.coridors)
-            {
+        foreach (CoridorData coridor in context.floorData.coridors.Values)
+        { 
                 cnt++;
-                Vector3 fromWall = ToVector3XZ(toRoom.Value.GetMiddleStartCoord());
-                Vector3 toWall = ToVector3XZ(toRoom.Value.GetMiddleEndCoord());
+                Vector3 fromWall = ToVector3XZ(coridor.GetMiddleStartCoord());
+                Vector3 toWall = ToVector3XZ(coridor.GetMiddleEndCoord());
                 CreateLine(fromWall + new Vector3(0,0.1f,0), toWall + new Vector3(0, 0.1f, 0));
+        }
+    }
+    private void CreateRoomConnections()
+    {
+        foreach (CoridorData coridor in context.floorData.coridors.Values)
+        {
+            foreach (TileData tiles in coridor.Tiles)
+            {
+
             }
         }
-        Debug.Log($"Коридоров: {cnt}");
     }
 }

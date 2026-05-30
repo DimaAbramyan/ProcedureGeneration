@@ -127,7 +127,7 @@ public class RoomGenerator
 
     void CreateRoom(List<Vector2Int> cluster)
     {
-        roomData = new RoomData();
+        roomData = new RoomData(floorData);
         Vector2Int sum = Vector2Int.zero;
         foreach (var p in cluster) sum += p;
         Vector2Int centerPos = sum / cluster.Count;
@@ -140,10 +140,13 @@ public class RoomGenerator
             return;
         }
        
-        roomData.number = roomCount;
+        roomData.id = roomCount;
         roomCount++;
+
         floorData.AddRoom(roomData);
         roomData.RecountRasterizationLevel();
+
+
         Debug.Log($"Комната {roomCount}. Пикселей: {cluster.Count}, центр: {centerPos}, уровень растеризации: {roomData.rastLevel}");
     }
 }

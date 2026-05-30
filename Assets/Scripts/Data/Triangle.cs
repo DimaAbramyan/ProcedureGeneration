@@ -17,8 +17,14 @@ public class Triangle
     
     public Triangle(Vector2Int roomCoord1, Vector2Int roomCoord2, Vector2Int roomCoord3)
     {
-        points = new Vector2Int[3] { roomCoord1, roomCoord2, roomCoord3 };
-        Edge[] edges = new Edge[3]
+        points = new Vector2Int[3] 
+        { 
+            roomCoord1, 
+            roomCoord2, 
+            roomCoord3 
+        };
+
+        edges = new Edge[3]
         {
             new Edge(roomCoord1, roomCoord2),
             new Edge(roomCoord1, roomCoord3),

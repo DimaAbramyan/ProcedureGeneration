@@ -20,7 +20,7 @@ public class Rasterization
     public void Run()
     {
         FloorData floorData = context.floorData;
-        foreach (RoomData roomData in floorData.rooms)
+        foreach (RoomData roomData in floorData.RoomByID.Values)
         {
             RoomRasterization(roomData);
         }
@@ -41,7 +41,6 @@ public class Rasterization
             clusterPixels = 0;
             for (int j = start.y; j < end.y; j += CellSize)
             {
-                //Debug.Log($"SEX: {start.x % CellSize == 0 && start.y % CellSize == 0 && end.x % CellSize == 0 && end.y % CellSize == 0}");
                 Vector2Int from = new Vector2Int(i, j);
                 Vector2Int to = new Vector2Int(i + CellSize, j +CellSize);
                 //Debug.Log("Начало: " + from + " конец: " + to);

@@ -15,15 +15,36 @@ public class CoridorData
 
     public HashSet<Vector2Int> startCor;
     public HashSet<Vector2Int> endCor;
-    public HashSet<Vector2Int> Tiles;
 
-    public ConnectionType startConnection;
-    public ConnectionType endConnection;
+    private HashSet<TileData> _tiles = new HashSet<TileData>();
+    public HashSet<TileData> Tiles
+    {
+        get => _tiles;
+        set
+        {
+            if (value == null)
+            {
+                UnityEngine.Debug.LogError(
+                    $"Tiles set to NULL for corridor {FromRoom?.id}->{ToRoom?.id}\n" +
+                    System.Environment.StackTrace
+                );
+            }
+            _tiles = value;
+        }
+    }
+
 
     public CoridorData(RoomData from, RoomData to)
     {
         FromRoom = from;
         ToRoom = to;
+        Tiles = new HashSet<TileData>();
+
+        startCor = new HashSet<Vector2Int>();
+        endCor = new HashSet<Vector2Int>();
+
+        if (Tiles == null)
+            UnityEngine.Debug.LogError("Tiles null after constructor!");
     }
     public void SetStartEndCoord(HashSet<Vector2Int> start, HashSet<Vector2Int> end)
     {
@@ -32,6 +53,8 @@ public class CoridorData
     }
     public Vector3 GetMiddleStartCoord()
     {
+        if (Tiles == null || Tiles.Count == 0)
+            return Vector3.zero;
         Vector2 sum  = new Vector2();
         int count = 0;
         foreach (var start in startCor)
@@ -43,6 +66,8 @@ public class CoridorData
     }
     public Vector3 GetMiddleEndCoord()
     {
+        if (Tiles == null || Tiles.Count == 0)
+            return Vector3.zero;
         Vector2 sum = new Vector2();
         int count = 0;
         foreach (var start in endCor)
@@ -52,6 +77,11 @@ public class CoridorData
         }
         return (sum / count);
     }
-
+    public void MarkCorridor(Vector2Int coridorTile)
+    {
+        Tiles.Add(new TileData(coridorTile,
+        TileData.TileType.CorridorFloor));
+    }
+    
 }
 
